@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "659599334608",
+    "project_id": "looksea-43f7d",
+    "storage_bucket": "looksea-43f7d.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:659599334608:android:b888f9c1ba138be72712d5",
+        "android_client_info": {
+          "package_name": "com.arvind.looksea"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "659599334608-bcbm4vfcof26972rmi7rbgolv4g3i3nq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCWW_Wj40hq9vEq1HaVCr1Gzf9lNTvSV2c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "659599334608-bcbm4vfcof26972rmi7rbgolv4g3i3nq.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
