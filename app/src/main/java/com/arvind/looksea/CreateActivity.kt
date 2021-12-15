@@ -1,6 +1,7 @@
 package com.arvind.looksea
 
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -8,6 +9,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
 import com.arvind.looksea.databinding.ActivityCreateBinding
 import com.arvind.looksea.models.Post
 import com.arvind.looksea.models.User
@@ -17,6 +19,9 @@ import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import com.google.firebase.firestore.GeoPoint
 import java.io.File
 
 private const val TAG = "CreateActivity"
@@ -27,6 +32,8 @@ class CreateActivity : AppCompatActivity() {
     private lateinit var firestoreDb: FirebaseFirestore
     private lateinit var binding: ActivityCreateBinding
     private lateinit var storageReference: StorageReference
+    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+    private var location: GeoPoint = GeoPoint(0.0, 0.0)
     private var photoUri: Uri? = null
     private val cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         if (success) {
@@ -48,13 +55,31 @@ class CreateActivity : AppCompatActivity() {
         }
     )
 
+    private fun fetchLocation() {
+        val task = fusedLocationProviderClient.lastLocation
+
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED &&
+            ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), 101)
+            return
+        }
+        task.addOnSuccessListener {
+            Log.i(TAG, "${it.latitude}, ${it.longitude}")
+            location = GeoPoint(it.latitude, it.longitude)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         binding = ActivityCreateBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        storageReference = FirebaseStorage.getInstance().reference
-        firestoreDb = FirebaseFirestore.getInstance()
 
+        storageReference = FirebaseStorage.getInstance().reference
+
+        firestoreDb = FirebaseFirestore.getInstance()
         firestoreDb.collection("users")
             .document(FirebaseAuth.getInstance().currentUser?.uid as String)
             .get()
@@ -66,12 +91,16 @@ class CreateActivity : AppCompatActivity() {
                 Log.i(TAG, "Failed to fetch signed-in user", exception)
             }
 
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
+
+
         binding.btnTakePicture.setOnClickListener {
             lifecycleScope.launchWhenStarted {
                 Log.i(TAG, "Opening up camera app on device")
                 photoUri = FileProvider.getUriForFile(applicationContext, applicationContext.packageName + ".provider", createImageFile())
                 cameraLauncher.launch(photoUri)
             }
+            fetchLocation()
         }
 
         binding.btnPickImage.setOnClickListener {
@@ -113,6 +142,7 @@ class CreateActivity : AppCompatActivity() {
                     binding.etDescription.text.toString(),
                     downloadUrlTask.result.toString(),
                     System.currentTimeMillis(),
+                    location,
                     signedInUser)
                 firestoreDb.collection("posts").add(post)
             }.addOnCompleteListener { postCreationTask ->
