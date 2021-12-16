@@ -29,7 +29,6 @@ open class PostsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityPostsBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        // setContentView(R.layout.activity_posts)
         // Create the layout file which represents one post - DONE
         // Create data source - DONE
         posts = mutableListOf()
@@ -58,7 +57,7 @@ open class PostsActivity : AppCompatActivity() {
 
         val username = intent.getStringExtra(EXTRA_USERNAME)
         if (username != null) {
-            supportActionBar?.title = username
+            //supportActionBar?.title = username
             postsReference = postsReference.whereEqualTo("user.username", username)
         }
 
@@ -83,7 +82,7 @@ open class PostsActivity : AppCompatActivity() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_posts, menu)
+        menuInflater.inflate(R.menu.menu, menu)
         return super.onCreateOptionsMenu(menu)
     }
 
@@ -93,6 +92,24 @@ open class PostsActivity : AppCompatActivity() {
             intent.putExtra(EXTRA_USERNAME, signedInUser?.username)
             startActivity(intent)
         }
+
+        if (item.itemId == R.id.menu_home) {
+            val intent = Intent(this, PostsActivity::class.java)
+            startActivity(intent)
+        }
+
+        if (item.itemId == R.id.menu_logout) {
+            logout()
+        }
+
         return super.onOptionsItemSelected(item)
+    }
+
+    private fun logout() {
+        Log.i(TAG, "Logging out...")
+        FirebaseAuth.getInstance().signOut()
+        val logoutIntent = Intent(this, LoginActivity::class.java)
+        logoutIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(logoutIntent)
     }
 }

@@ -44,7 +44,9 @@ class RegisterActivity : AppCompatActivity() {
                         if (login.isSuccessful) {
                             val user = User(
                                 username,
-                                age.toInt()
+                                age.toInt(),
+                                "",
+                                ""
                             )
                             firestoreDb.collection("users")
                                 .document(auth.currentUser?.uid as String)
