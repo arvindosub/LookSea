@@ -19,6 +19,7 @@ import com.google.firebase.firestore.Query
 private const val TAG = "ProfileActivity"
 class ProfileActivity : AppCompatActivity() {
 
+    private var signedInUser: User? = null
     private var currUser: User? = null
     private lateinit var firestoreDb: FirebaseFirestore
     private lateinit var posts: MutableList<Post>
@@ -42,11 +43,8 @@ class ProfileActivity : AppCompatActivity() {
             .document(FirebaseAuth.getInstance().currentUser?.uid as String)
             .get()
             .addOnSuccessListener { userSnapshot ->
-                currUser = userSnapshot.toObject(User::class.java)
-                binding.profileAge.text = "age:   " + currUser?.age.toString()
-                binding.profileDescription.text ="about me:   " + currUser?.description
-                Glide.with(applicationContext).load(currUser?.picture).into(binding.profilePicture)
-                Log.i(TAG, "Signed-In User: $currUser")
+                signedInUser = userSnapshot.toObject(User::class.java)
+                Log.i(TAG, "Signed-In User: $signedInUser")
             }
             .addOnFailureListener { exception ->
                 Log.i(TAG, "Failed to fetch signed-in user", exception)
@@ -61,6 +59,17 @@ class ProfileActivity : AppCompatActivity() {
         if (username != null) {
             binding.profileName.text = username
             postsReference = postsReference.whereEqualTo("user.username", username)
+
+            firestoreDb.collection("users")
+                .whereEqualTo("username", username)
+                .get()
+                .addOnSuccessListener { userSnapshot ->
+                    currUser = userSnapshot.toObjects((User::class.java))[0]
+                    binding.profileAge.text = "age:   " + currUser?.age.toString()
+                    binding.profileDescription.text ="about me:   " + currUser?.description
+                    Glide.with(applicationContext).load(currUser?.picture).into(binding.profilePicture)
+                    Log.i(TAG, "Current User: $currUser")
+                }
         }
 
         postsReference.addSnapshotListener { snapshot, exception ->
@@ -85,18 +94,23 @@ class ProfileActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu, menu)
-        return true
+        return super.onCreateOptionsMenu(menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == R.id.menu_profile) {
             val intent = Intent(this, ProfileActivity::class.java)
-            intent.putExtra(EXTRA_USERNAME, currUser?.username)
+            intent.putExtra(EXTRA_USERNAME, signedInUser?.username)
             startActivity(intent)
         }
 
         if (item.itemId == R.id.menu_home) {
             val intent = Intent(this, PostsActivity::class.java)
+            startActivity(intent)
+        }
+
+        if (item.itemId == R.id.menu_social) {
+            val intent = Intent(this, SocialActivity::class.java)
             startActivity(intent)
         }
 

@@ -13,6 +13,9 @@
         android:title="Profile"
         app:showAsAction="always" />
     <item
+        android:id="@+id/menu_social"
+        android:title="Social" />
+    <item
         android:id="@+id/menu_logout"
         android:title="Logout" />
 
