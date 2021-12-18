@@ -24,7 +24,7 @@ import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.arvind.looksea.databinding.ActivityPostsBinding
-import com.arvind.looksea.databinding.ActivitySocialBinding
+import com.arvind.looksea.databinding.ActivitySearchBinding
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.firestore.GeoPoint
@@ -32,82 +32,32 @@ import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.toObjects
 import java.io.File
 
-private const val TAG = "SocialActivity"
+private const val TAG = "SearchActivity"
 
-class SocialActivity : AppCompatActivity() {
+class SearchActivity : AppCompatActivity() {
 
     private var signedInUser: User? = null
     private lateinit var firestoreDb: FirebaseFirestore
-    private lateinit var binding: ActivitySocialBinding
+    private lateinit var binding: ActivitySearchBinding
 
-    private lateinit var friend: MutableList<User>
-    private lateinit var adapterFriends: UsersAdapter
-    private lateinit var friendList: MutableList<User>
-
-    private lateinit var request: MutableList<User>
-    private lateinit var adapterRequests: UsersAdapter
-    private lateinit var requestList: MutableList<User>
-
-    private fun loadFriends() {
-        friend = mutableListOf()
-        adapterFriends = UsersAdapter(this, friend)
-        binding.rvFriends.adapter = adapterFriends
-        binding.rvFriends.layoutManager = LinearLayoutManager(this)
-        firestoreDb.collection("friendlists").document(signedInUser?.username as String)
-            .collection("myfriends")
-            .get()
-            .addOnSuccessListener { requestSnapshots ->
-                friendList = requestSnapshots.toObjects((User::class.java))
-                Log.i(TAG, "$friendList")
-                friend.clear()
-                friend.addAll(friendList)
-                adapterFriends.notifyDataSetChanged()
-            }
-
-        adapterFriends.setOnItemClickListener(object : UsersAdapter.onItemClickListener {
-            override fun onItemClick(position: Int) {
-                val person = friendList[position]
-                Log.i(TAG, "$person")
-                val intent = Intent(this@SocialActivity, ProfileActivity::class.java)
-                intent.putExtra(EXTRA_USERNAME, person.username)
-                startActivity(intent)
-            }
-        })
-    }
-
-    private fun loadRequests() {
-        request = mutableListOf()
-        adapterRequests = UsersAdapter(this, request)
-        binding.rvRequests.adapter = adapterRequests
-        binding.rvRequests.layoutManager = LinearLayoutManager(this)
-        firestoreDb.collection("friendrequests").document(signedInUser?.username as String)
-            .collection("received")
-            .get()
-            .addOnSuccessListener { requestSnapshots ->
-                requestList = requestSnapshots.toObjects((User::class.java))
-                Log.i(TAG, "$requestList")
-                request.clear()
-                request.addAll(requestList)
-                adapterRequests.notifyDataSetChanged()
-            }
-
-        adapterRequests.setOnItemClickListener(object : UsersAdapter.onItemClickListener {
-            override fun onItemClick(position: Int) {
-                val person = requestList[position]
-                Log.i(TAG, "$person")
-                val intent = Intent(this@SocialActivity, ProfileActivity::class.java)
-                intent.putExtra(EXTRA_USERNAME, person.username)
-                startActivity(intent)
-            }
-        })
-    }
+    private lateinit var search: MutableList<User>
+    private lateinit var adapterSearch: UsersAdapter
+    private lateinit var searchList: MutableList<User>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivitySocialBinding.inflate(layoutInflater)
+        binding = ActivitySearchBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        firestoreDb = FirebaseFirestore.getInstance()
+        // Create the layout file which represents one post - DONE
+        // Create data source - DONE
+        search = mutableListOf()
+        // Create the adapter
+        adapterSearch = UsersAdapter(this, search)
+        // Bind the adapter and layout manager to the RV
+        binding.rvSearch.adapter = adapterSearch
+        binding.rvSearch.layoutManager = LinearLayoutManager(this)
 
+        firestoreDb = FirebaseFirestore.getInstance()
         firestoreDb.collection("users")
             .document(FirebaseAuth.getInstance().currentUser?.uid as String)
             .get()
@@ -115,10 +65,35 @@ class SocialActivity : AppCompatActivity() {
                 signedInUser = userSnapshot.toObject(User::class.java)
                 Log.i(TAG, "Signed-In User: $signedInUser")
 
-                loadRequests()
-                loadFriends()
+                binding.etSearch.addTextChangedListener {
+                    if (it.toString() == "") {
+                        search.clear()
+                        adapterSearch.notifyDataSetChanged()
+                    } else {
+                        firestoreDb.collection("users")
+                            .whereGreaterThanOrEqualTo("username", it.toString())
+                            .get()
+                            .addOnSuccessListener { querySnapshots ->
+                                searchList = querySnapshots.toObjects((User::class.java))
+                                Log.i(TAG, "$searchList")
+                                search.clear()
+                                search.addAll(searchList)
+                                adapterSearch.notifyDataSetChanged()
+                            }
+                    }
+                }
+                adapterSearch.setOnItemClickListener(object : UsersAdapter.onItemClickListener {
+                    override fun onItemClick(position: Int) {
+                        val person = searchList[position]
+                        Log.i(TAG, "$person")
+                        val intent = Intent(this@SearchActivity, ProfileActivity::class.java)
+                        intent.putExtra(EXTRA_USERNAME, person.username)
+                        startActivity(intent)
+                    }
+                })
 
-            }.addOnFailureListener { exception ->
+            }
+            .addOnFailureListener { exception ->
                 Log.i(TAG, "Failed to fetch signed-in user", exception)
             }
 

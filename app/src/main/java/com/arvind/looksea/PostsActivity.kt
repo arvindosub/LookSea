@@ -103,6 +103,11 @@ open class PostsActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
+        if (item.itemId == R.id.menu_search) {
+            val intent = Intent(this, SearchActivity::class.java)
+            startActivity(intent)
+        }
+
         if (item.itemId == R.id.menu_logout) {
             logout()
         }
