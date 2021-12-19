@@ -40,14 +40,31 @@
             android:textSize="12sp"
             tools:text="48 minutes ago" />
 
-        <ImageView
-            android:id="@+id/ivPost"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="300dp"
-            android:layout_marginTop="4dp"
-            android:scaleType="centerCrop"
-            tools:ignore="ImageContrastCheck"
-            tools:srcCompat="@tools:sample/avatars" />
+            android:layout_height="wrap_content" >
+
+            <ImageView
+                android:id="@+id/ivPost"
+                android:layout_width="match_parent"
+                android:layout_height="300dp"
+                android:layout_marginTop="5dp"
+                android:scaleType="centerCrop"
+                android:visibility="visible"
+                tools:ignore="ImageContrastCheck"
+                tools:srcCompat="@tools:sample/avatars" />
+
+            <VideoView
+                android:id="@+id/vvPost"
+                android:layout_width="188dp"
+                android:layout_height="300dp"
+                android:layout_marginLeft="96dp"
+                android:layout_marginTop="5dp"
+                android:scaleType="centerCrop"
+                tools:ignore="ImageContrastCheck"
+                android:visibility="invisible" />
+
+        </FrameLayout>
 
         <TextView
             android:id="@+id/tvDescription"

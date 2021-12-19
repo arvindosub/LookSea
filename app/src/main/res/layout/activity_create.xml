@@ -10,13 +10,28 @@
     android:orientation="vertical"
     tools:context=".CreateActivity">
 
-    <ImageView
-        android:id="@+id/imageView"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="350dp"
-        android:scaleType="centerCrop"
-        tools:ignore="ImageContrastCheck"
-        tools:srcCompat="@tools:sample/avatars" />
+        android:layout_height="wrap_content" >
+
+        <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="match_parent"
+            android:layout_height="350dp"
+            android:scaleType="centerCrop"
+            tools:ignore="ImageContrastCheck"
+            tools:srcCompat="@tools:sample/avatars"
+            android:visibility="visible"/>
+
+        <VideoView
+            android:id="@+id/videoView"
+            android:layout_width="match_parent"
+            android:layout_height="350dp"
+            android:scaleType="centerCrop"
+            tools:ignore="ImageContrastCheck"
+            android:visibility="invisible" />
+
+    </FrameLayout>
 
     <EditText
         android:id="@+id/etDescription"
@@ -32,7 +47,7 @@
         android:layout_width="150dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:layout_marginTop="50dp"
+        android:layout_marginTop="10dp"
         android:text="Choose Image"
         android:backgroundTint="@color/colorSecondaryVariant"
         android:textColor="@color/black"/>
@@ -47,10 +62,19 @@
         android:textColor="@color/black"/>
 
     <Button
+        android:id="@+id/btnTakeVideo"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:text="Take Video"
+        android:backgroundTint="@color/colorSecondaryVariant"
+        android:textColor="@color/black"/>
+
+    <Button
         android:id="@+id/btnSubmit"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="50dp"
+        android:layout_marginTop="20dp"
         android:clickable="true"
         android:text="Submit" />
 

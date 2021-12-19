@@ -24,6 +24,7 @@ open class PostsActivity : AppCompatActivity() {
     private lateinit var posts: MutableList<Post>
     private lateinit var adapter: PostsAdapter
     private lateinit var binding: ActivityPostsBinding
+    private lateinit var friendList: MutableList<User>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,35 +46,62 @@ open class PostsActivity : AppCompatActivity() {
             .addOnSuccessListener { userSnapshot ->
                 signedInUser = userSnapshot.toObject(User::class.java)
                 Log.i(TAG, "Signed-In User: $signedInUser")
+
+                var postsReference = firestoreDb
+                    .collection("posts")
+                    .limit(20)
+                    .orderBy("creation_time_ms", Query.Direction.DESCENDING)
+
+                val username = intent.getStringExtra(EXTRA_USERNAME)
+                // supportActionBar?.title = username
+                //filter out posts not from self or friends in home page
+                if (username != null) {
+                    postsReference = postsReference.whereEqualTo("user.username", username)
+
+                    postsReference.addSnapshotListener { snapshot, exception ->
+                        if (exception != null || snapshot == null) {
+                            Log.e(TAG, "Exception when querying posts", exception)
+                            return@addSnapshotListener
+                        }
+                        val postList = snapshot.toObjects(Post::class.java)
+                        posts.clear()
+                        posts.addAll(postList)
+                        adapter.notifyDataSetChanged()
+                        for (post in postList) {
+                            Log.i(TAG, "Post $post")
+                        }
+                    }
+
+                } else {
+                    firestoreDb.collection("friendlists")
+                        .document(signedInUser?.username as String)
+                        .collection("myfriends")
+                        .get()
+                        .addOnSuccessListener { friends ->
+                            friendList = friends.toObjects((User::class.java))
+                            friendList.add(signedInUser)
+                            Log.i(TAG, "Friends List: $friendList")
+                            postsReference = postsReference.whereIn("user", friendList)
+
+                            postsReference.addSnapshotListener { snapshot, exception ->
+                                if (exception != null || snapshot == null) {
+                                    Log.e(TAG, "Exception when querying posts", exception)
+                                    return@addSnapshotListener
+                                }
+                                val postList = snapshot.toObjects(Post::class.java)
+                                posts.clear()
+                                posts.addAll(postList)
+                                adapter.notifyDataSetChanged()
+                                for (post in postList) {
+                                    Log.i(TAG, "Post $post")
+                                }
+                            }
+                        }
+                }
             }
             .addOnFailureListener { exception ->
                 Log.i(TAG, "Failed to fetch signed-in user", exception)
             }
-
-        var postsReference = firestoreDb
-            .collection("posts")
-            .limit(20)
-            .orderBy("creation_time_ms", Query.Direction.DESCENDING)
-
-        val username = intent.getStringExtra(EXTRA_USERNAME)
-        if (username != null) {
-            //supportActionBar?.title = username
-            postsReference = postsReference.whereEqualTo("user.username", username)
-        }
-
-        postsReference.addSnapshotListener { snapshot, exception ->
-            if (exception != null || snapshot == null) {
-                Log.e(TAG, "Exception when querying posts", exception)
-                return@addSnapshotListener
-            }
-            val postList = snapshot.toObjects(Post::class.java)
-            posts.clear()
-            posts.addAll(postList)
-            adapter.notifyDataSetChanged()
-            for (post in postList) {
-                Log.i(TAG, "Post $post")
-            }
-        }
 
         binding.fabCreate.setOnClickListener {
             val intent = Intent(this, CreateActivity::class.java)

@@ -1,13 +1,18 @@
 package com.arvind.looksea
 
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Log
+import android.widget.MediaController
 import android.widget.Toast
+import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultCallback
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import com.arvind.looksea.databinding.ActivityCreateBinding
@@ -18,11 +23,13 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 import androidx.core.content.FileProvider
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.firestore.GeoPoint
 import java.io.File
+import java.lang.ref.Reference
 
 private const val TAG = "CreateActivity"
 
@@ -33,10 +40,15 @@ class CreateActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCreateBinding
     private lateinit var storageReference: StorageReference
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+    private lateinit var fileReference: StorageReference
+    private lateinit var fileUploadUri: Uri
     private var location: GeoPoint = GeoPoint(0.0, 0.0)
     private var photoUri: Uri? = null
+    private var videoUri: Uri? = null
     private val cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         if (success) {
+            binding.imageView.isVisible = true
+            binding.videoView.isVisible = false
             binding.imageView.setImageURI(photoUri)
         }
     }
@@ -46,15 +58,28 @@ class CreateActivity : AppCompatActivity() {
             deleteOnExit()
         }
     }
-    private val getImage = registerForActivityResult(
-        ActivityResultContracts.GetContent(),
-        ActivityResultCallback {
+    private val videoLauncher = registerForActivityResult(ActivityResultContracts.CaptureVideo()) { success ->
+        if (success) {
+            binding.imageView.isVisible = false
+            binding.videoView.isVisible = true
+            binding.videoView.setVideoURI(videoUri)
+            binding.videoView.setMediaController(MediaController(this))
+            binding.videoView.start()
+        }
+    }
+    private fun createVideoFile(): File {
+        return File.createTempFile("cameraVideo", ".mp4", cacheDir).apply {
+            createNewFile()
+            deleteOnExit()
+        }
+    }
+    private val getImage = registerForActivityResult(ActivityResultContracts.GetContent(), ActivityResultCallback {
+            binding.imageView.isVisible = true
+            binding.videoView.isVisible = false
             binding.imageView.setImageURI(it)
             Log.i(TAG, "photoUri $it")
             photoUri = it
-        }
-    )
-
+        })
     private fun fetchLocation() {
         val task = fusedLocationProviderClient.lastLocation
 
@@ -93,6 +118,14 @@ class CreateActivity : AppCompatActivity() {
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
 
+        binding.btnTakeVideo.setOnClickListener {
+            lifecycleScope.launchWhenStarted {
+                Log.i(TAG, "Opening up camera app on device")
+                videoUri = FileProvider.getUriForFile(applicationContext, applicationContext.packageName + ".provider", createVideoFile())
+                videoLauncher.launch(videoUri)
+            }
+            fetchLocation()
+        }
 
         binding.btnTakePicture.setOnClickListener {
             lifecycleScope.launchWhenStarted {
@@ -104,7 +137,7 @@ class CreateActivity : AppCompatActivity() {
         }
 
         binding.btnPickImage.setOnClickListener {
-            Log.i(TAG, "Opening up image picker on device")
+            Log.i(TAG, "Opening up file browser on device")
             getImage.launch("image/*")
         }
 
@@ -114,8 +147,8 @@ class CreateActivity : AppCompatActivity() {
     }
 
     private fun handleSubmitButtonClick() {
-        if (photoUri == null) {
-            Toast.makeText(this, "No image selected", Toast.LENGTH_SHORT).show()
+        if (photoUri == null && videoUri == null) {
+            Toast.makeText(this, "No video/image selected", Toast.LENGTH_SHORT).show()
             return
         }
         if (binding.etDescription.text.isBlank()) {
@@ -128,16 +161,22 @@ class CreateActivity : AppCompatActivity() {
         }
 
         binding.btnSubmit.isEnabled = false
-        val photoUploadUri = photoUri as Uri
-        val photoReference = storageReference.child("images/${System.currentTimeMillis()}-photo.jpg")
-        // Upload photo to Firebase Storage
-        photoReference.putFile(photoUploadUri)
-            .continueWithTask { photoUploadTask ->
-                Log.i(TAG, "uploaded bytes: ${photoUploadTask.result?.bytesTransferred}")
-                // Retrieve image url of uploaded image to Firestore
-                photoReference.downloadUrl
+        if ((binding.videoView.isVisible) && !(binding.imageView.isVisible)) {
+            fileUploadUri = videoUri as Uri
+            fileReference = storageReference.child("videos/${System.currentTimeMillis()}-video.mp4")
+            Log.i(TAG, "$fileReference, $fileUploadUri")
+        } else if ((binding.imageView.isVisible) && !(binding.videoView.isVisible)) {
+            fileUploadUri = photoUri as Uri
+            fileReference = storageReference.child("images/${System.currentTimeMillis()}-photo.jpg")
+        }
+        // Upload file to Firebase Storage
+        fileReference.putFile(fileUploadUri)
+            .continueWithTask { fileUploadTask ->
+                Log.i(TAG, "uploaded bytes: ${fileUploadTask.result?.bytesTransferred}")
+                // Retrieve url of uploaded file to Firestore
+                fileReference.downloadUrl
             }.continueWithTask { downloadUrlTask ->
-                // Create a post object with the image url and add it to posts collection
+                // Create a post object with the file url and add it to posts collection
                 val post = Post(
                     binding.etDescription.text.toString(),
                     downloadUrlTask.result.toString(),
@@ -153,15 +192,14 @@ class CreateActivity : AppCompatActivity() {
                 }
                 binding.etDescription.text.clear()
                 binding.imageView.setImageResource(0)
-                Toast.makeText(this, "Image uploaded!", Toast.LENGTH_SHORT).show()
+                binding.videoView.setVideoURI(null)
+                binding.imageView.isVisible = true
+                binding.videoView.isVisible = false
+                Toast.makeText(this, "File uploaded!", Toast.LENGTH_SHORT).show()
                 val profileIntent = Intent(this, ProfileActivity::class.java)
                 profileIntent.putExtra(EXTRA_USERNAME, signedInUser?.username)
                 startActivity(profileIntent)
                 finish()
             }
-
-
-
     }
-
 }
