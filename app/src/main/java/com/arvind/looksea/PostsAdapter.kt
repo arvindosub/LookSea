@@ -36,7 +36,10 @@ class PostsAdapter (val context: Context, private val posts: List<Post>) : Recyc
             itemView.findViewById<TextView>(R.id.tvUsername).text = post.user?.username
             itemView.findViewById<TextView>(R.id.tvDescription).text = post.description
 
-            if (post.fileUrl.contains("-video")) {
+            if (post.type == "video") {
+                // rendering the video on the feed consumes a lot of bandwidth.
+                // removing posts using videos for now.
+                /*
                 itemView.findViewById<View>(R.id.vvPost).isVisible = true
                 itemView.findViewById<View>(R.id.ivPost).isVisible = false
                 myVideo = itemView.findViewById<View>(R.id.vvPost) as VideoView?
@@ -47,8 +50,15 @@ class PostsAdapter (val context: Context, private val posts: List<Post>) : Recyc
                 myVideo?.setMediaController(mediaControls)
                 myVideo?.setVideoURI(Uri.parse(post.fileUrl))
                 myVideo?.requestFocus()
+                */
+                itemView.findViewById<View>(R.id.vvPost).isVisible = false
+                itemView.findViewById<View>(R.id.ivPost).isVisible = true
+                Glide.with(context).load(post.fileUrl).into(itemView.findViewById<ImageView>(R.id.ivPost))
+                /*
+                itemView.findViewById<ImageView>(R.id.ivPost).setImageResource(R.drawable.ic_video)
+                */
 
-            } else if (post.fileUrl.contains("-photo")) {
+            } else if (post.type == "image") {
                 itemView.findViewById<View>(R.id.vvPost).isVisible = false
                 itemView.findViewById<View>(R.id.ivPost).isVisible = true
                 Glide.with(context).load(post.fileUrl).into(itemView.findViewById<ImageView>(R.id.ivPost))

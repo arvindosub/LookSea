@@ -17,7 +17,7 @@
         <ImageView
             android:id="@+id/imageView"
             android:layout_width="match_parent"
-            android:layout_height="350dp"
+            android:layout_height="300dp"
             android:scaleType="centerCrop"
             tools:ignore="ImageContrastCheck"
             tools:srcCompat="@tools:sample/avatars"
@@ -26,12 +26,21 @@
         <VideoView
             android:id="@+id/videoView"
             android:layout_width="match_parent"
-            android:layout_height="350dp"
+            android:layout_height="300dp"
             android:scaleType="centerCrop"
             tools:ignore="ImageContrastCheck"
             android:visibility="invisible" />
 
     </FrameLayout>
+
+    <EditText
+        android:id="@+id/etFilename"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Filename"
+        android:minHeight="48dp" />
 
     <EditText
         android:id="@+id/etDescription"
@@ -42,33 +51,59 @@
         android:hint="Description"
         android:minHeight="48dp" />
 
-    <Button
-        android:id="@+id/btnPickImage"
-        android:layout_width="150dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="10dp"
-        android:text="Choose Image"
-        android:backgroundTint="@color/colorSecondaryVariant"
-        android:textColor="@color/black"/>
 
-    <Button
-        android:id="@+id/btnTakePicture"
-        android:layout_width="150dp"
+    <RadioGroup
+        android:id="@+id/rgType"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:text="Take Picture"
-        android:backgroundTint="@color/colorSecondaryVariant"
-        android:textColor="@color/black"/>
+        android:orientation="horizontal" >
 
-    <Button
-        android:id="@+id/btnTakeVideo"
-        android:layout_width="150dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:text="Take Video"
-        android:backgroundTint="@color/colorSecondaryVariant"
-        android:textColor="@color/black"/>
+        <RadioButton
+            android:id="@+id/rgbImage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Image" />
+
+        <RadioButton
+            android:id="@+id/rgbVideo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Video" />
+
+        <RadioButton
+            android:id="@+id/rgbAudio"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Audio" />
+
+
+    </RadioGroup>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" >
+
+        <Button
+            android:id="@+id/btnChooseFile"
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="25dp"
+            android:text="Choose File"
+            android:backgroundTint="@color/colorPrimaryVariant"
+            android:textColor="@color/black"
+            android:visibility="invisible" />
+
+        <Button
+            android:id="@+id/btnCaptureNow"
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="25dp"
+            android:text="Capture Now"
+            android:backgroundTint="@color/colorSecondaryVariant"
+            android:textColor="@color/black"
+            android:visibility="invisible" />
+
+    </LinearLayout>
 
     <Button
         android:id="@+id/btnSubmit"

@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.GridView
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -25,9 +26,115 @@ class ProfileActivity : AppCompatActivity() {
     private var signedInUser: User? = null
     private var currUser: User? = null
     private lateinit var firestoreDb: FirebaseFirestore
-    private lateinit var posts: MutableList<Post>
-    private lateinit var adapter: PostsAdapter
     private lateinit var binding: ActivityProfileBinding
+
+    private lateinit var images: MutableList<Post>
+    private lateinit var adapterImages: ProfileAdapter
+    private lateinit var imageList: MutableList<Post>
+    private lateinit var imageGridView: GridView
+    private fun loadImages() {
+        images = mutableListOf()
+        imageGridView = binding.gvImages
+        adapterImages = ProfileAdapter(this, images)
+        imageGridView.adapter = adapterImages
+
+        firestoreDb.collection("posts").whereEqualTo("user", currUser)
+            .whereEqualTo("type", "image")
+            .get()
+            .addOnSuccessListener { myPosts ->
+                imageList = myPosts.toObjects((Post::class.java))
+                Log.i(TAG, "$imageList")
+                images.clear()
+                images.addAll(imageList)
+                adapterImages.notifyDataSetChanged()
+            }
+
+        // to navigate to the page for each specific post. add later when CRUD is added for posts.
+        // copy from SocialActivity
+        /*
+        adapterImages.setOnItemClickListener(object : ProfileAdapter.onItemClickListener {
+            override fun onItemClick(position: Int) {
+                val person = imageList[position]
+                Log.i(TAG, "$person")
+                val intent = Intent(this@ProfileActivity, ProfileActivity::class.java)
+                intent.putExtra(EXTRA_USERNAME, person.username)
+                startActivity(intent)
+            }
+        })
+        */
+    }
+
+    private lateinit var videos: MutableList<Post>
+    private lateinit var adapterVideos: ProfileAdapter
+    private lateinit var videoList: MutableList<Post>
+    private lateinit var videoGridView: GridView
+    private fun loadVideos() {
+        videos = mutableListOf()
+        videoGridView = binding.gvVideos
+        adapterVideos = ProfileAdapter(this, videos)
+        videoGridView.adapter = adapterVideos
+
+        firestoreDb.collection("posts").whereEqualTo("user", currUser)
+            .whereEqualTo("type", "video")
+            .get()
+            .addOnSuccessListener { myPosts ->
+                videoList = myPosts.toObjects((Post::class.java))
+                Log.i(TAG, "$videoList")
+                videos.clear()
+                videos.addAll(videoList)
+                adapterVideos.notifyDataSetChanged()
+            }
+
+        // to navigate to the page for each specific post. add later when CRUD is added for posts.
+        // copy from SocialActivity
+        /*
+        adapterImages.setOnItemClickListener(object : ProfileAdapter.onItemClickListener {
+            override fun onItemClick(position: Int) {
+                val person = imageList[position]
+                Log.i(TAG, "$person")
+                val intent = Intent(this@ProfileActivity, ProfileActivity::class.java)
+                intent.putExtra(EXTRA_USERNAME, person.username)
+                startActivity(intent)
+            }
+        })
+        */
+    }
+
+    private lateinit var audio: MutableList<Post>
+    private lateinit var adapterAudio: ProfileAdapter
+    private lateinit var audioList: MutableList<Post>
+    private lateinit var audioGridView: GridView
+    private fun loadAudio() {
+        audio = mutableListOf()
+        audioGridView = binding.gvAudio
+        adapterAudio = ProfileAdapter(this, audio)
+        audioGridView.adapter = adapterAudio
+
+        firestoreDb.collection("posts").whereEqualTo("user", currUser)
+            .whereEqualTo("type", "audio")
+            .get()
+            .addOnSuccessListener { myPosts ->
+                audioList = myPosts.toObjects((Post::class.java))
+                Log.i(TAG, "$audioList")
+                audio.clear()
+                audio.addAll(audioList)
+                adapterAudio.notifyDataSetChanged()
+            }
+
+        // to navigate to the page for each specific post. add later when CRUD is added for posts.
+        // copy from SocialActivity
+        /*
+        adapterImages.setOnItemClickListener(object : ProfileAdapter.onItemClickListener {
+            override fun onItemClick(position: Int) {
+                val person = imageList[position]
+                Log.i(TAG, "$person")
+                val intent = Intent(this@ProfileActivity, ProfileActivity::class.java)
+                intent.putExtra(EXTRA_USERNAME, person.username)
+                startActivity(intent)
+            }
+        })
+        */
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -36,15 +143,9 @@ class ProfileActivity : AppCompatActivity() {
 
         binding = ActivityProfileBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        posts = mutableListOf()
-        adapter = PostsAdapter(this, posts)
-        binding.profilePosts.adapter = adapter
-        binding.profilePosts.layoutManager = LinearLayoutManager(this)
         binding.profileName.text = username
 
         firestoreDb = FirebaseFirestore.getInstance()
-
         firestoreDb.collection("users")
             .document(FirebaseAuth.getInstance().currentUser?.uid as String)
             .get()
@@ -123,6 +224,10 @@ class ProfileActivity : AppCompatActivity() {
                                                     }
                                                 }
 
+                                                loadImages()
+                                                loadVideos()
+                                                loadAudio()
+
                                             }
                                     }
                             }
@@ -131,25 +236,6 @@ class ProfileActivity : AppCompatActivity() {
             .addOnFailureListener { exception ->
                 Log.i(TAG, "Failed to fetch signed-in user", exception)
             }
-
-        var postsReference = firestoreDb
-            .collection("posts")
-            .limit(20)
-            .orderBy("creation_time_ms", Query.Direction.DESCENDING)
-        postsReference = postsReference.whereEqualTo("user.username", username)
-        postsReference.addSnapshotListener { snapshot, exception ->
-            if (exception != null || snapshot == null) {
-                Log.e(TAG, "Exception when querying posts", exception)
-                return@addSnapshotListener
-            }
-            val postList = snapshot.toObjects(Post::class.java)
-            posts.clear()
-            posts.addAll(postList)
-            adapter.notifyDataSetChanged()
-            for (post in postList) {
-                Log.i(TAG, "Post $post")
-            }
-        }
 
     }
 

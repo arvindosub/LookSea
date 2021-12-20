@@ -36,6 +36,7 @@ private const val TAG = "CreateActivity"
 class CreateActivity : AppCompatActivity() {
 
     private var signedInUser: User? = null
+    private var fileType: String? = ""
     private lateinit var firestoreDb: FirebaseFirestore
     private lateinit var binding: ActivityCreateBinding
     private lateinit var storageReference: StorageReference
@@ -43,13 +44,14 @@ class CreateActivity : AppCompatActivity() {
     private lateinit var fileReference: StorageReference
     private lateinit var fileUploadUri: Uri
     private var location: GeoPoint = GeoPoint(0.0, 0.0)
-    private var photoUri: Uri? = null
+    private var imageUri: Uri? = null
     private var videoUri: Uri? = null
+    private var audioUri: Uri? = null
     private val cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         if (success) {
             binding.imageView.isVisible = true
             binding.videoView.isVisible = false
-            binding.imageView.setImageURI(photoUri)
+            binding.imageView.setImageURI(imageUri)
         }
     }
     private fun createImageFile(): File {
@@ -73,12 +75,23 @@ class CreateActivity : AppCompatActivity() {
             deleteOnExit()
         }
     }
-    private val getImage = registerForActivityResult(ActivityResultContracts.GetContent(), ActivityResultCallback {
-            binding.imageView.isVisible = true
-            binding.videoView.isVisible = false
-            binding.imageView.setImageURI(it)
-            Log.i(TAG, "photoUri $it")
-            photoUri = it
+    private val getFile = registerForActivityResult(ActivityResultContracts.GetContent(), ActivityResultCallback {
+            if (binding.rgbImage.isSelected) {
+                binding.imageView.isVisible = true
+                binding.videoView.isVisible = false
+                binding.imageView.setImageURI(it)
+                Log.i(TAG, "imageUri $it")
+                imageUri = it
+            } else if (binding.rgbVideo.isSelected) {
+                binding.imageView.isVisible = false
+                binding.videoView.isVisible = true
+                binding.videoView.setVideoURI(it)
+                Log.i(TAG, "videoUri $it")
+                videoUri = it
+            } else if (binding.rgbAudio.isSelected) {
+                Log.i(TAG, "audioUri $it")
+                audioUri = it
+            }
         })
     private fun fetchLocation() {
         val task = fusedLocationProviderClient.lastLocation
@@ -118,27 +131,55 @@ class CreateActivity : AppCompatActivity() {
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
 
-        binding.btnTakeVideo.setOnClickListener {
-            lifecycleScope.launchWhenStarted {
-                Log.i(TAG, "Opening up camera app on device")
-                videoUri = FileProvider.getUriForFile(applicationContext, applicationContext.packageName + ".provider", createVideoFile())
-                videoLauncher.launch(videoUri)
+        binding.rgbImage.setOnClickListener {
+            binding.btnChooseFile.isVisible = true
+            binding.btnCaptureNow.isVisible = true
+
+            binding.btnChooseFile.setOnClickListener {
+                Log.i(TAG, "Opening up image file browser on device")
+                getFile.launch("image/*")
             }
-            fetchLocation()
+
+            binding.btnCaptureNow.setOnClickListener {
+                lifecycleScope.launchWhenStarted {
+                    Log.i(TAG, "Opening up camera app on device")
+                    imageUri = FileProvider.getUriForFile(applicationContext, applicationContext.packageName + ".provider", createImageFile())
+                    cameraLauncher.launch(imageUri)
+                }
+                fetchLocation()
+            }
+
         }
 
-        binding.btnTakePicture.setOnClickListener {
-            lifecycleScope.launchWhenStarted {
-                Log.i(TAG, "Opening up camera app on device")
-                photoUri = FileProvider.getUriForFile(applicationContext, applicationContext.packageName + ".provider", createImageFile())
-                cameraLauncher.launch(photoUri)
+        binding.rgbVideo.setOnClickListener {
+            binding.btnChooseFile.isVisible = true
+            binding.btnCaptureNow.isVisible = true
+
+            binding.btnChooseFile.setOnClickListener {
+                Log.i(TAG, "Opening up video file browser on device")
+                getFile.launch("video/*")
             }
-            fetchLocation()
+
+            binding.btnCaptureNow.setOnClickListener {
+                lifecycleScope.launchWhenStarted {
+                    Log.i(TAG, "Opening up camera app on device")
+                    videoUri = FileProvider.getUriForFile(applicationContext, applicationContext.packageName + ".provider", createVideoFile())
+                    videoLauncher.launch(videoUri)
+                }
+                fetchLocation()
+            }
+
         }
 
-        binding.btnPickImage.setOnClickListener {
-            Log.i(TAG, "Opening up file browser on device")
-            getImage.launch("image/*")
+        binding.rgbAudio.setOnClickListener {
+            binding.btnChooseFile.isVisible = true
+            binding.btnCaptureNow.isVisible = false
+
+            binding.btnChooseFile.setOnClickListener {
+                Log.i(TAG, "Opening up audio file browser on device")
+                getFile.launch("audio/*")
+            }
+
         }
 
         binding.btnSubmit.setOnClickListener {
@@ -147,12 +188,16 @@ class CreateActivity : AppCompatActivity() {
     }
 
     private fun handleSubmitButtonClick() {
-        if (photoUri == null && videoUri == null) {
+        if (imageUri == null && videoUri == null && audioUri == null) {
             Toast.makeText(this, "No video/image selected", Toast.LENGTH_SHORT).show()
             return
         }
         if (binding.etDescription.text.isBlank()) {
             Toast.makeText(this, "Description cannot be empty", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (binding.etFilename.text.isBlank()) {
+            Toast.makeText(this, "Please include a filename", Toast.LENGTH_SHORT).show()
             return
         }
         if (signedInUser == null) {
@@ -161,13 +206,19 @@ class CreateActivity : AppCompatActivity() {
         }
 
         binding.btnSubmit.isEnabled = false
-        if ((binding.videoView.isVisible) && !(binding.imageView.isVisible)) {
+        if (binding.rgbVideo.isChecked) {
             fileUploadUri = videoUri as Uri
-            fileReference = storageReference.child("videos/${System.currentTimeMillis()}-video.mp4")
-            Log.i(TAG, "$fileReference, $fileUploadUri")
-        } else if ((binding.imageView.isVisible) && !(binding.videoView.isVisible)) {
-            fileUploadUri = photoUri as Uri
-            fileReference = storageReference.child("images/${System.currentTimeMillis()}-photo.jpg")
+            fileType = "video"
+            //fileReference = storageReference.child("videos/${System.currentTimeMillis()}-video.mp4")
+            fileReference = storageReference.child("videos/${binding.etFilename.text}-video.mp4")
+        } else if (binding.rgbImage.isChecked) {
+            fileUploadUri = imageUri as Uri
+            fileReference = storageReference.child("images/${binding.etFilename.text}-photo.jpg")
+            fileType = "image"
+        } else if (binding.rgbAudio.isChecked) {
+            fileUploadUri = imageUri as Uri
+            fileReference = storageReference.child("audio/${binding.etFilename.text}-audio.mp3")
+            fileType = "audio"
         }
         // Upload file to Firebase Storage
         fileReference.putFile(fileUploadUri)
@@ -178,7 +229,9 @@ class CreateActivity : AppCompatActivity() {
             }.continueWithTask { downloadUrlTask ->
                 // Create a post object with the file url and add it to posts collection
                 val post = Post(
+                    binding.etFilename.text.toString(),
                     binding.etDescription.text.toString(),
+                    fileType.toString(),
                     downloadUrlTask.result.toString(),
                     System.currentTimeMillis(),
                     location,
