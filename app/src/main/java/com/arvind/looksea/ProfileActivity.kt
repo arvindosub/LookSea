@@ -25,6 +25,7 @@ class ProfileActivity : AppCompatActivity() {
 
     private var signedInUser: User? = null
     private var currUser: User? = null
+    private var requestReceiver: Boolean? = false
     private lateinit var firestoreDb: FirebaseFirestore
     private lateinit var binding: ActivityProfileBinding
 
@@ -140,7 +141,7 @@ class ProfileActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
         val username = intent.getStringExtra(EXTRA_USERNAME)
-
+        Log.i(TAG, "$username")
         binding = ActivityProfileBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.profileName.text = username
@@ -177,10 +178,9 @@ class ProfileActivity : AppCompatActivity() {
                                     .get()
                                     .addOnSuccessListener { receivedResult ->
                                         Log.i(TAG, "RECEIVED: ${receivedResult.data}")
-                                        var receiver = false
                                         if (receivedResult.data != null) {
                                             contact = true
-                                            receiver = true
+                                            requestReceiver = true
                                         }
 
                                         firestoreDb.collection("friendlists").document(signedInUser?.username as String)
@@ -206,11 +206,19 @@ class ProfileActivity : AppCompatActivity() {
                                                 } else if (contact) {
                                                     binding.btnProfile.text = "Pending"
                                                     binding.btnProfile.isEnabled = false
-                                                    if (receiver) {
+
+                                                    if (requestReceiver == true) {
                                                         binding.btnAccept.isVisible = true
                                                         binding.btnAccept.setOnClickListener {
                                                             acceptFriendRequest()
                                                         }
+                                                        binding.btnReject.text = "Reject"
+                                                        binding.btnReject.isVisible = true
+                                                        binding.btnReject.setOnClickListener {
+                                                            rejectFriendRequest()
+                                                        }
+                                                    } else {
+                                                        binding.btnReject.text = "Cancel"
                                                         binding.btnReject.isVisible = true
                                                         binding.btnReject.setOnClickListener {
                                                             rejectFriendRequest()
@@ -291,15 +299,28 @@ class ProfileActivity : AppCompatActivity() {
     }
 
     private fun rejectFriendRequest() {
-        firestoreDb.collection("friendrequests").document(signedInUser?.username as String)
-            .collection("received").document(currUser?.username as String).delete()
+        if (requestReceiver == true) {
+            firestoreDb.collection("friendrequests").document(signedInUser?.username as String)
+                .collection("received").document(currUser?.username as String).delete()
 
-        firestoreDb.collection("friendrequests").document(currUser?.username as String)
-            .collection("sent").document(signedInUser?.username as String).delete()
+            firestoreDb.collection("friendrequests").document(currUser?.username as String)
+                .collection("sent").document(signedInUser?.username as String).delete()
 
-        Toast.makeText(this, "Friend Request Rejected...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Friend Request Rejected...", Toast.LENGTH_SHORT).show()
+
+        } else {
+            firestoreDb.collection("friendrequests").document(signedInUser?.username as String)
+                .collection("sent").document(currUser?.username as String).delete()
+
+            firestoreDb.collection("friendrequests").document(currUser?.username as String)
+                .collection("received").document(signedInUser?.username as String).delete()
+
+            Toast.makeText(this, "Friend Request Cancelled...", Toast.LENGTH_SHORT).show()
+
+        }
         finish()
-        startActivity(getIntent())
+        val intent = Intent(this, SocialActivity::class.java)
+        startActivity(intent)
     }
 
     private fun acceptFriendRequest() {

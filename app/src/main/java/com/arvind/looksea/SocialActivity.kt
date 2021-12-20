@@ -58,21 +58,21 @@ class SocialActivity : AppCompatActivity() {
             .get()
             .addOnSuccessListener { requestSnapshots ->
                 friendList = requestSnapshots.toObjects((User::class.java))
-                Log.i(TAG, "$friendList")
+                Log.i(TAG, "FRIENDS: $friend")
                 friend.clear()
                 friend.addAll(friendList)
                 adapterFriends.notifyDataSetChanged()
-            }
 
-        adapterFriends.setOnItemClickListener(object : UsersAdapter.onItemClickListener {
-            override fun onItemClick(position: Int) {
-                val person = friendList[position]
-                Log.i(TAG, "$person")
-                val intent = Intent(this@SocialActivity, ProfileActivity::class.java)
-                intent.putExtra(EXTRA_USERNAME, person.username)
-                startActivity(intent)
+                adapterFriends.setOnItemClickListener(object : UsersAdapter.onItemClickListener {
+                    override fun onItemClick(position: Int) {
+                        val person = friend[position]
+                        Log.i(TAG, "$person")
+                        val intent = Intent(this@SocialActivity, ProfileActivity::class.java)
+                        intent.putExtra(EXTRA_USERNAME, person.username)
+                        startActivity(intent)
+                    }
+                })
             }
-        })
     }
 
     private fun loadRequests() {
@@ -83,23 +83,30 @@ class SocialActivity : AppCompatActivity() {
         firestoreDb.collection("friendrequests").document(signedInUser?.username as String)
             .collection("received")
             .get()
-            .addOnSuccessListener { requestSnapshots ->
-                requestList = requestSnapshots.toObjects((User::class.java))
-                Log.i(TAG, "$requestList")
+            .addOnSuccessListener { receivedOnly ->
+                requestList = receivedOnly.toObjects((User::class.java))
                 request.clear()
                 request.addAll(requestList)
-                adapterRequests.notifyDataSetChanged()
-            }
+                firestoreDb.collection("friendrequests").document(signedInUser?.username as String)
+                    .collection("sent")
+                    .get()
+                    .addOnSuccessListener { requestSnapshots ->
+                        requestList = requestSnapshots.toObjects((User::class.java))
+                        request.addAll(requestList)
+                        Log.i(TAG, "REQUESTS: $request")
+                        adapterRequests.notifyDataSetChanged()
 
-        adapterRequests.setOnItemClickListener(object : UsersAdapter.onItemClickListener {
-            override fun onItemClick(position: Int) {
-                val person = requestList[position]
-                Log.i(TAG, "$person")
-                val intent = Intent(this@SocialActivity, ProfileActivity::class.java)
-                intent.putExtra(EXTRA_USERNAME, person.username)
-                startActivity(intent)
+                        adapterRequests.setOnItemClickListener(object : UsersAdapter.onItemClickListener {
+                            override fun onItemClick(position: Int) {
+                                val person = request[position]
+                                Log.i(TAG, "$person")
+                                val intent = Intent(this@SocialActivity, ProfileActivity::class.java)
+                                intent.putExtra(EXTRA_USERNAME, person.username)
+                                startActivity(intent)
+                            }
+                        })
+                    }
             }
-        })
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

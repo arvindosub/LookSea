@@ -79,7 +79,7 @@
             android:backgroundTint="#AF4C4C"
             android:textColor="@color/black"
             android:visibility="invisible"
-            android:text="Deny" />
+            android:text="Reject" />
 
         <Button
             android:id="@+id/btnProfile"
