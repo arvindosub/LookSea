@@ -10,7 +10,7 @@ import android.widget.TextView
 import com.arvind.looksea.models.Post
 import com.bumptech.glide.Glide
 
-internal class ProfileAdapter(val context: Context, private val files: List<Post>) : BaseAdapter() {
+internal class FileAdapter(val context: Context, private val files: List<Post>) : BaseAdapter() {
 
     private var layoutInflater: LayoutInflater? = null
     private lateinit var imageView: ImageView

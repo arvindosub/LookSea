@@ -22,7 +22,7 @@ class LoginActivity : AppCompatActivity() {
 
         // Check if user is signed in (non-null) and update UI accordingly.
         if (auth.currentUser != null) {
-            goPostsActivity()
+            goHomeActivity()
         }
 
         binding.btnLogin.setOnClickListener {
@@ -40,7 +40,7 @@ class LoginActivity : AppCompatActivity() {
                 binding.btnLogin.isEnabled = true
                 if (task.isSuccessful) {
                     Toast.makeText(this, "Logged-In Successfully!", Toast.LENGTH_SHORT).show()
-                    goPostsActivity()
+                    goHomeActivity()
                 } else {
                     Log.e(TAG, "signInWithEmail: failure", task.exception)
                     Toast.makeText(this, "Authentication Failed...", Toast.LENGTH_SHORT).show()
@@ -54,9 +54,9 @@ class LoginActivity : AppCompatActivity() {
 
     }
 
-    private fun goPostsActivity() {
-        Log.i(TAG, "goPostsActivity")
-        val intent = Intent(this, PostsActivity::class.java)
+    private fun goHomeActivity() {
+        Log.i(TAG, "goHomeActivity")
+        val intent = Intent(this, HomeActivity::class.java)
         startActivity(intent)
         finish()
     }

@@ -53,7 +53,7 @@ class RegisterActivity : AppCompatActivity() {
                                 .set(user)
                                 .addOnSuccessListener {
                                     Toast.makeText(this, "User Created and Logged-In!", Toast.LENGTH_SHORT).show()
-                                    goPostsActivity()
+                                    goHomeActivity()
                                 }
                                 .addOnFailureListener {
                                     Log.e(TAG, "createUserInFirestore: failure", regn.exception)
@@ -69,9 +69,9 @@ class RegisterActivity : AppCompatActivity() {
         }
     }
 
-    private fun goPostsActivity() {
-        Log.i(TAG, "goPostsActivity")
-        val intent = Intent(this, PostsActivity::class.java)
+    private fun goHomeActivity() {
+        Log.i(TAG, "goHomeActivity")
+        val intent = Intent(this, HomeActivity::class.java)
         startActivity(intent)
     }
 

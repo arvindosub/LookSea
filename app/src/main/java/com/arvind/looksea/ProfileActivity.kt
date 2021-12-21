@@ -5,20 +5,17 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.AdapterView
 import android.widget.GridView
-import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.arvind.looksea.databinding.ActivityProfileBinding
 import com.arvind.looksea.models.Post
 import com.arvind.looksea.models.User
 import com.bumptech.glide.Glide
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.ktx.toObject
 
 private const val TAG = "ProfileActivity"
 class ProfileActivity : AppCompatActivity() {
@@ -30,13 +27,13 @@ class ProfileActivity : AppCompatActivity() {
     private lateinit var binding: ActivityProfileBinding
 
     private lateinit var images: MutableList<Post>
-    private lateinit var adapterImages: ProfileAdapter
+    private lateinit var adapterImages: FileAdapter
     private lateinit var imageList: MutableList<Post>
     private lateinit var imageGridView: GridView
     private fun loadImages() {
         images = mutableListOf()
         imageGridView = binding.gvImages
-        adapterImages = ProfileAdapter(this, images)
+        adapterImages = FileAdapter(this, images)
         imageGridView.adapter = adapterImages
 
         firestoreDb.collection("posts").whereEqualTo("user", currUser)
@@ -48,31 +45,24 @@ class ProfileActivity : AppCompatActivity() {
                 images.clear()
                 images.addAll(imageList)
                 adapterImages.notifyDataSetChanged()
-            }
 
-        // to navigate to the page for each specific post. add later when CRUD is added for posts.
-        // copy from SocialActivity
-        /*
-        adapterImages.setOnItemClickListener(object : ProfileAdapter.onItemClickListener {
-            override fun onItemClick(position: Int) {
-                val person = imageList[position]
-                Log.i(TAG, "$person")
-                val intent = Intent(this@ProfileActivity, ProfileActivity::class.java)
-                intent.putExtra(EXTRA_USERNAME, person.username)
-                startActivity(intent)
+                imageGridView.onItemClickListener =
+                    AdapterView.OnItemClickListener { _, _, position, _ ->
+                        val intent = Intent(this@ProfileActivity, PostActivity::class.java)
+                        intent.putExtra(EXTRA_POSTTIME, images[position].creationTimeMs.toString())
+                        startActivity(intent)
+                    }
             }
-        })
-        */
     }
 
     private lateinit var videos: MutableList<Post>
-    private lateinit var adapterVideos: ProfileAdapter
+    private lateinit var adapterVideos: FileAdapter
     private lateinit var videoList: MutableList<Post>
     private lateinit var videoGridView: GridView
     private fun loadVideos() {
         videos = mutableListOf()
         videoGridView = binding.gvVideos
-        adapterVideos = ProfileAdapter(this, videos)
+        adapterVideos = FileAdapter(this, videos)
         videoGridView.adapter = adapterVideos
 
         firestoreDb.collection("posts").whereEqualTo("user", currUser)
@@ -84,31 +74,24 @@ class ProfileActivity : AppCompatActivity() {
                 videos.clear()
                 videos.addAll(videoList)
                 adapterVideos.notifyDataSetChanged()
-            }
 
-        // to navigate to the page for each specific post. add later when CRUD is added for posts.
-        // copy from SocialActivity
-        /*
-        adapterImages.setOnItemClickListener(object : ProfileAdapter.onItemClickListener {
-            override fun onItemClick(position: Int) {
-                val person = imageList[position]
-                Log.i(TAG, "$person")
-                val intent = Intent(this@ProfileActivity, ProfileActivity::class.java)
-                intent.putExtra(EXTRA_USERNAME, person.username)
-                startActivity(intent)
+                videoGridView.onItemClickListener =
+                    AdapterView.OnItemClickListener { _, _, position, _ ->
+                        val intent = Intent(this@ProfileActivity, PostActivity::class.java)
+                        intent.putExtra(EXTRA_POSTTIME, videos[position].creationTimeMs.toString())
+                        startActivity(intent)
+                    }
             }
-        })
-        */
     }
 
     private lateinit var audio: MutableList<Post>
-    private lateinit var adapterAudio: ProfileAdapter
+    private lateinit var adapterAudio: FileAdapter
     private lateinit var audioList: MutableList<Post>
     private lateinit var audioGridView: GridView
     private fun loadAudio() {
         audio = mutableListOf()
         audioGridView = binding.gvAudio
-        adapterAudio = ProfileAdapter(this, audio)
+        adapterAudio = FileAdapter(this, audio)
         audioGridView.adapter = adapterAudio
 
         firestoreDb.collection("posts").whereEqualTo("user", currUser)
@@ -120,21 +103,14 @@ class ProfileActivity : AppCompatActivity() {
                 audio.clear()
                 audio.addAll(audioList)
                 adapterAudio.notifyDataSetChanged()
-            }
 
-        // to navigate to the page for each specific post. add later when CRUD is added for posts.
-        // copy from SocialActivity
-        /*
-        adapterImages.setOnItemClickListener(object : ProfileAdapter.onItemClickListener {
-            override fun onItemClick(position: Int) {
-                val person = imageList[position]
-                Log.i(TAG, "$person")
-                val intent = Intent(this@ProfileActivity, ProfileActivity::class.java)
-                intent.putExtra(EXTRA_USERNAME, person.username)
-                startActivity(intent)
+                audioGridView.onItemClickListener =
+                    AdapterView.OnItemClickListener { _, _, position, _ ->
+                        val intent = Intent(this@ProfileActivity, PostActivity::class.java)
+                        intent.putExtra(EXTRA_POSTTIME, audio[position].creationTimeMs.toString())
+                        startActivity(intent)
+                    }
             }
-        })
-        */
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -260,7 +236,7 @@ class ProfileActivity : AppCompatActivity() {
         }
 
         if (item.itemId == R.id.menu_home) {
-            val intent = Intent(this, PostsActivity::class.java)
+            val intent = Intent(this, HomeActivity::class.java)
             startActivity(intent)
         }
 

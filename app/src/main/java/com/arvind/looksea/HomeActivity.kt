@@ -7,34 +7,35 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.arvind.looksea.databinding.ActivityPostsBinding
+import com.arvind.looksea.databinding.ActivityHomeBinding
 import com.arvind.looksea.models.Post
 import com.arvind.looksea.models.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 
-private const val TAG = "PostsActivity"
+private const val TAG = "HomeActivity"
 const val EXTRA_USERNAME = "EXTRA_USERNAME"
+const val EXTRA_POSTTIME = "EXTRA_POSTTIME"
 
-open class PostsActivity : AppCompatActivity() {
+open class HomeActivity : AppCompatActivity() {
 
     private var signedInUser: User? = null
     private lateinit var firestoreDb: FirebaseFirestore
     private lateinit var posts: MutableList<Post>
-    private lateinit var adapter: PostsAdapter
-    private lateinit var binding: ActivityPostsBinding
+    private lateinit var adapter: PostAdapter
+    private lateinit var binding: ActivityHomeBinding
     private lateinit var friendList: MutableList<User>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityPostsBinding.inflate(layoutInflater)
+        binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
         // Create the layout file which represents one post - DONE
         // Create data source - DONE
         posts = mutableListOf()
         // Create the adapter
-        adapter = PostsAdapter(this, posts)
+        adapter = PostAdapter(this, posts)
         // Bind the adapter and layout manager to the RV
         binding.rvPosts.adapter = adapter
         binding.rvPosts.layoutManager = LinearLayoutManager(this)
@@ -98,6 +99,16 @@ open class PostsActivity : AppCompatActivity() {
                             }
                         }
                 }
+                adapter.setOnItemClickListener(object : PostAdapter.onItemClickListener {
+                    override fun onItemClick(position: Int) {
+                        val clickedPost = posts[position]
+                        Log.i(TAG, "$clickedPost")
+                        val intent = Intent(this@HomeActivity, PostActivity::class.java)
+                        intent.putExtra(EXTRA_POSTTIME, clickedPost.creationTimeMs.toString())
+                        startActivity(intent)
+                    }
+                })
+
             }
             .addOnFailureListener { exception ->
                 Log.i(TAG, "Failed to fetch signed-in user", exception)
@@ -122,7 +133,7 @@ open class PostsActivity : AppCompatActivity() {
         }
 
         if (item.itemId == R.id.menu_home) {
-            val intent = Intent(this, PostsActivity::class.java)
+            val intent = Intent(this, HomeActivity::class.java)
             startActivity(intent)
         }
 

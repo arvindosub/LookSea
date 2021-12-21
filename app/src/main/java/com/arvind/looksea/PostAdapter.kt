@@ -1,7 +1,6 @@
 package com.arvind.looksea
 
 import android.content.Context
-import android.net.Uri
 import android.text.format.DateUtils
 import android.view.LayoutInflater
 import android.view.View
@@ -14,14 +13,24 @@ import com.bumptech.glide.Glide
 import java.math.BigInteger
 import java.security.MessageDigest
 
-class PostsAdapter (val context: Context, private val posts: List<Post>) : RecyclerView.Adapter<PostsAdapter.ViewHolder>() {
+class PostAdapter (val context: Context, private val posts: List<Post>) : RecyclerView.Adapter<PostAdapter.ViewHolder>() {
 
-    private var mediaControls: MediaController? = null
-    private var myVideo: VideoView? = null
+    //var mediaControls: MediaController? = null
+    //private var myVideo: VideoView? = null
+
+    private lateinit var pListener : onItemClickListener
+
+    interface onItemClickListener {
+        fun onItemClick(position : Int)
+    }
+
+    fun setOnItemClickListener(listener: onItemClickListener) {
+        pListener = listener
+    }
 
     override fun onCreateViewHolder(viewGroup: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(viewGroup.context).inflate(R.layout.item_post, viewGroup, false)
-        return ViewHolder(view)
+        return ViewHolder(view, pListener)
     }
 
     override fun getItemCount() = posts.size
@@ -30,7 +39,7 @@ class PostsAdapter (val context: Context, private val posts: List<Post>) : Recyc
         holder.bind(posts[position])
     }
 
-    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    inner class ViewHolder(itemView: View, listener: onItemClickListener) : RecyclerView.ViewHolder(itemView) {
         fun bind(post: Post) {
             val username = post.user?.username as String
             itemView.findViewById<TextView>(R.id.tvUsername).text = post.user?.username
@@ -65,6 +74,11 @@ class PostsAdapter (val context: Context, private val posts: List<Post>) : Recyc
             }
             Glide.with(context).load(getProfileImageUrl(username)).into(itemView.findViewById<ImageView>(R.id.ivProfileImage))
             itemView.findViewById<TextView>(R.id.tvRelativeTime).text = DateUtils.getRelativeTimeSpanString(post.creationTimeMs)
+        }
+        init {
+            itemView.setOnClickListener {
+                listener.onItemClick(bindingAdapterPosition)
+            }
         }
 
         private fun getProfileImageUrl(username: String): String {

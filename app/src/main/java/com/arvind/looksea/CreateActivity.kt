@@ -1,18 +1,14 @@
 package com.arvind.looksea
 
-import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.provider.MediaStore
 import android.util.Log
 import android.widget.MediaController
 import android.widget.Toast
-import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultCallback
-import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import com.arvind.looksea.databinding.ActivityCreateBinding
@@ -29,7 +25,6 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.firestore.GeoPoint
 import java.io.File
-import java.lang.ref.Reference
 
 private const val TAG = "CreateActivity"
 
@@ -76,19 +71,19 @@ class CreateActivity : AppCompatActivity() {
         }
     }
     private val getFile = registerForActivityResult(ActivityResultContracts.GetContent(), ActivityResultCallback {
-            if (binding.rgbImage.isSelected) {
+            if (binding.rgbImage.isChecked) {
                 binding.imageView.isVisible = true
                 binding.videoView.isVisible = false
                 binding.imageView.setImageURI(it)
                 Log.i(TAG, "imageUri $it")
                 imageUri = it
-            } else if (binding.rgbVideo.isSelected) {
+            } else if (binding.rgbVideo.isChecked) {
                 binding.imageView.isVisible = false
                 binding.videoView.isVisible = true
                 binding.videoView.setVideoURI(it)
                 Log.i(TAG, "videoUri $it")
                 videoUri = it
-            } else if (binding.rgbAudio.isSelected) {
+            } else if (binding.rgbAudio.isChecked) {
                 Log.i(TAG, "audioUri $it")
                 audioUri = it
             }
@@ -192,12 +187,12 @@ class CreateActivity : AppCompatActivity() {
             Toast.makeText(this, "No video/image selected", Toast.LENGTH_SHORT).show()
             return
         }
-        if (binding.etDescription.text.isBlank()) {
-            Toast.makeText(this, "Description cannot be empty", Toast.LENGTH_SHORT).show()
-            return
-        }
         if (binding.etFilename.text.isBlank()) {
             Toast.makeText(this, "Please include a filename", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (binding.etDescription.text.isBlank()) {
+            Toast.makeText(this, "Description cannot be empty", Toast.LENGTH_SHORT).show()
             return
         }
         if (signedInUser == null) {
@@ -220,6 +215,7 @@ class CreateActivity : AppCompatActivity() {
             fileReference = storageReference.child("audio/${binding.etFilename.text}-audio.mp3")
             fileType = "audio"
         }
+
         // Upload file to Firebase Storage
         fileReference.putFile(fileUploadUri)
             .continueWithTask { fileUploadTask ->

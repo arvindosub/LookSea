@@ -10,7 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.arvind.looksea.models.User
 import com.bumptech.glide.Glide
 
-class UsersAdapter (val context: Context, private val users: List<User>) : RecyclerView.Adapter<UsersAdapter.ViewHolder>() {
+class UserAdapter (val context: Context, private val users: List<User>) : RecyclerView.Adapter<UserAdapter.ViewHolder>() {
 
     private lateinit var mListener : onItemClickListener
 
