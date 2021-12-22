@@ -1,9 +1,15 @@
 package com.arvind.looksea
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.drawable.Drawable
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.FileUtils
 import android.util.Log
 import android.widget.Toast
+import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import com.arvind.looksea.models.Post
 import com.arvind.looksea.models.User
 import com.google.firebase.auth.FirebaseAuth
@@ -13,7 +19,14 @@ import com.google.firebase.storage.StorageReference
 import androidx.core.view.isVisible
 import com.arvind.looksea.databinding.ActivityPostBinding
 import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
 import com.google.firebase.firestore.GeoPoint
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.label.ImageLabeling
+import com.google.mlkit.vision.label.defaults.ImageLabelerOptions
+import java.io.File
+import java.nio.file.Paths
 
 private const val TAG = "PostActivity"
 
@@ -64,6 +77,11 @@ class PostActivity : AppCompatActivity() {
                                 handleSubmitButtonClick()
                             }
                         }
+
+                        binding.btnAnalyse.setOnClickListener {
+                            handleAnalysis()
+                        }
+
                     }
             }
             .addOnFailureListener { exception ->
@@ -107,4 +125,25 @@ class PostActivity : AppCompatActivity() {
             }
         }
     }
+
+    private fun handleAnalysis() {
+        Glide.with(this).asBitmap().load(post?.fileUrl).into(object : CustomTarget<Bitmap?>() {
+            override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap?>?) {
+                val image = InputImage.fromBitmap(resource, 0)
+                val labeler = ImageLabeling.getClient(ImageLabelerOptions.DEFAULT_OPTIONS)
+                labeler.process(image)
+                    .addOnSuccessListener { labels ->
+                        for (label in labels) {
+                            Log.i(TAG, "${label.index}. ${label.text}: ${label.confidence}")
+                        }
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e(TAG, "$e")
+                    }
+            }
+
+            override fun onLoadCleared(placeholder: Drawable?) {}
+        })
+    }
+
 }

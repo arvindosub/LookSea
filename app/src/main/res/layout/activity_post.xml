@@ -58,4 +58,14 @@
         android:text="Submit"
         android:visibility="invisible" />
 
+    <Button
+        android:id="@+id/btnAnalyse"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:clickable="true"
+        android:text="Analyse"
+        android:backgroundTint="@color/colorSecondaryVariant"
+        android:textColor="@color/black" />
+
 </LinearLayout>
