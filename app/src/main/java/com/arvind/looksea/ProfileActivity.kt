@@ -177,8 +177,12 @@ class ProfileActivity : AppCompatActivity() {
                                                         startActivity(intent)
                                                     }
                                                 } else if (friend) {
-                                                    binding.btnProfile.text = "My Friend"
-                                                    binding.btnProfile.isEnabled = false
+                                                    binding.btnProfile.text = "Unfriend"
+                                                    binding.btnProfile.isEnabled = true
+                                                    // remove friend option
+                                                    binding.btnProfile.setOnClickListener {
+                                                        removeFriend()
+                                                    }
                                                 } else if (contact) {
                                                     binding.btnProfile.text = "Pending"
                                                     binding.btnProfile.isEnabled = false
@@ -318,6 +322,22 @@ class ProfileActivity : AppCompatActivity() {
             .collection("sent").document(signedInUser?.username as String).delete()
 
         Toast.makeText(this, "Friend Request Accepted...", Toast.LENGTH_SHORT).show()
+        finish()
+        startActivity(getIntent())
+    }
+
+    private fun removeFriend() {
+        val curr = currUser
+        val sign = signedInUser
+        if (curr != null) {
+            firestoreDb.collection("friendlists").document(signedInUser?.username as String)
+                .collection("myfriends").document(currUser?.username as String).delete()
+        }
+        if (sign != null) {
+            firestoreDb.collection("friendlists").document(currUser?.username as String)
+                .collection("myfriends").document(signedInUser?.username as String).delete()
+        }
+        Toast.makeText(this, "Unfriended...", Toast.LENGTH_SHORT).show()
         finish()
         startActivity(getIntent())
     }

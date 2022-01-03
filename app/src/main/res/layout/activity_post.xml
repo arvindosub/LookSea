@@ -68,4 +68,14 @@
         android:backgroundTint="@color/colorSecondaryVariant"
         android:textColor="@color/black" />
 
+    <Button
+        android:id="@+id/btnDelete"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:backgroundTint="#9AE91E1E"
+        android:clickable="true"
+        android:text="Delete"
+        android:visibility="invisible" />
+
 </LinearLayout>

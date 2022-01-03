@@ -1,5 +1,6 @@
 package com.arvind.looksea
 
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
@@ -73,8 +74,12 @@ class PostActivity : AppCompatActivity() {
                         if (signedInUser == post?.user) {
                             binding.etDescription.isEnabled = true
                             binding.btnSubmit.isVisible = true
+                            binding.btnDelete.isVisible = true
                             binding.btnSubmit.setOnClickListener {
                                 handleSubmitButtonClick()
+                            }
+                            binding.btnDelete.setOnClickListener {
+                                deletePost()
                             }
                         }
 
@@ -144,6 +149,31 @@ class PostActivity : AppCompatActivity() {
 
             override fun onLoadCleared(placeholder: Drawable?) {}
         })
+    }
+
+    private fun deletePost() {
+        val id = postId
+        val item = post
+        var fpath = ""
+        if (item?.type.toString() == "image") {
+            fpath = "images/${item?.filename}-photo.jpg"
+        } else if (item?.type.toString() == "video") {
+            fpath = "videos/${item?.filename}-video.mp4"
+        } else {
+            fpath = "audio/${item?.filename}-audio.mp3"
+        }
+        val fileRef = storageReference.child(fpath)
+        Log.i(TAG, "fpath is: ${fpath}")
+
+        firestoreDb.collection("posts").document(id as String).delete().addOnCompleteListener {
+            fileRef.delete().addOnCompleteListener {
+                Toast.makeText(this, "Deleted post...", Toast.LENGTH_SHORT).show()
+                finish()
+                val intent = Intent(this, ProfileActivity::class.java)
+                intent.putExtra(EXTRA_USERNAME, signedInUser?.username)
+                startActivity(intent)
+            }
+        }
     }
 
 }
