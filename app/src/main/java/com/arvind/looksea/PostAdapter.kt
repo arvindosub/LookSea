@@ -41,8 +41,8 @@ class PostAdapter (val context: Context, private val posts: List<Post>) : Recycl
 
     inner class ViewHolder(itemView: View, listener: onItemClickListener) : RecyclerView.ViewHolder(itemView) {
         fun bind(post: Post) {
-            val username = post.user?.username as String
-            itemView.findViewById<TextView>(R.id.tvUsername).text = post.user?.username
+            val username = post.username as String
+            itemView.findViewById<TextView>(R.id.tvUsername).text = post.username
             itemView.findViewById<TextView>(R.id.tvDescription).text = post.description
 
             if (post.type == "video") {

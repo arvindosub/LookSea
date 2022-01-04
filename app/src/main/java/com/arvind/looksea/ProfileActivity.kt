@@ -21,7 +21,9 @@ private const val TAG = "ProfileActivity"
 class ProfileActivity : AppCompatActivity() {
 
     private var signedInUser: User? = null
+    private var userId: String? = ""
     private var currUser: User? = null
+    private var currUserId: String? = ""
     private var requestReceiver: Boolean? = false
     private lateinit var firestoreDb: FirebaseFirestore
     private lateinit var binding: ActivityProfileBinding
@@ -36,7 +38,7 @@ class ProfileActivity : AppCompatActivity() {
         adapterImages = FileAdapter(this, images)
         imageGridView.adapter = adapterImages
 
-        firestoreDb.collection("posts").whereEqualTo("user", currUser)
+        firestoreDb.collection("posts").whereEqualTo("user", currUserId)
             .whereEqualTo("type", "image")
             .get()
             .addOnSuccessListener { myPosts ->
@@ -65,7 +67,7 @@ class ProfileActivity : AppCompatActivity() {
         adapterVideos = FileAdapter(this, videos)
         videoGridView.adapter = adapterVideos
 
-        firestoreDb.collection("posts").whereEqualTo("user", currUser)
+        firestoreDb.collection("posts").whereEqualTo("user", currUserId)
             .whereEqualTo("type", "video")
             .get()
             .addOnSuccessListener { myPosts ->
@@ -94,7 +96,7 @@ class ProfileActivity : AppCompatActivity() {
         adapterAudio = FileAdapter(this, audio)
         audioGridView.adapter = adapterAudio
 
-        firestoreDb.collection("posts").whereEqualTo("user", currUser)
+        firestoreDb.collection("posts").whereEqualTo("user", currUserId)
             .whereEqualTo("type", "audio")
             .get()
             .addOnSuccessListener { myPosts ->
@@ -123,8 +125,9 @@ class ProfileActivity : AppCompatActivity() {
         binding.profileName.text = username
 
         firestoreDb = FirebaseFirestore.getInstance()
+        userId = FirebaseAuth.getInstance().currentUser?.uid as String
         firestoreDb.collection("users")
-            .document(FirebaseAuth.getInstance().currentUser?.uid as String)
+            .document(userId!!)
             .get()
             .addOnSuccessListener { userSnapshot ->
                 signedInUser = userSnapshot.toObject(User::class.java)
@@ -133,14 +136,17 @@ class ProfileActivity : AppCompatActivity() {
                     .whereEqualTo("username", username)
                     .get()
                     .addOnSuccessListener { userSnapshot ->
-                        currUser = userSnapshot.toObjects((User::class.java))[0]
+                        userSnapshot.forEach{ doc ->
+                            currUser = doc.toObject((User::class.java))
+                            currUserId = doc.id
+                        }
                         binding.profileAge.text = "age:   " + currUser?.age.toString()
                         binding.profileDescription.text ="about me:   " + currUser?.description
                         Glide.with(applicationContext).load(currUser?.picture).into(binding.profilePicture)
                         Log.i(TAG, "Current User: $currUser")
 
-                        firestoreDb.collection("friendrequests").document(signedInUser?.username as String)
-                            .collection("sent").document(currUser?.username as String)
+                        firestoreDb.collection("friendrequests").document(userId as String)
+                            .collection("sent").document(currUserId as String)
                             .get()
                             .addOnSuccessListener { sentResult ->
                                 var contact = false
@@ -149,8 +155,8 @@ class ProfileActivity : AppCompatActivity() {
                                     contact = true
                                 }
 
-                                firestoreDb.collection("friendrequests").document(signedInUser?.username as String)
-                                    .collection("received").document(currUser?.username as String)
+                                firestoreDb.collection("friendrequests").document(userId as String)
+                                    .collection("received").document(currUserId as String)
                                     .get()
                                     .addOnSuccessListener { receivedResult ->
                                         Log.i(TAG, "RECEIVED: ${receivedResult.data}")
@@ -159,8 +165,8 @@ class ProfileActivity : AppCompatActivity() {
                                             requestReceiver = true
                                         }
 
-                                        firestoreDb.collection("friendlists").document(signedInUser?.username as String)
-                                            .collection("myfriends").document(currUser?.username as String)
+                                        firestoreDb.collection("friendlists").document(userId as String)
+                                            .collection("myfriends").document(currUserId as String)
                                             .get()
                                             .addOnSuccessListener { friendResult ->
                                                 Log.i(TAG, "FRIEND: ${friendResult.data}")
@@ -173,8 +179,21 @@ class ProfileActivity : AppCompatActivity() {
                                                     binding.btnProfile.text = "Create Post"
                                                     binding.btnProfile.isEnabled = true
                                                     binding.btnProfile.setOnClickListener {
-                                                        val intent = Intent(this, CreateActivity::class.java)
-                                                        startActivity(intent)
+                                                        val createIntent = Intent(this, CreateActivity::class.java)
+                                                        startActivity(createIntent)
+                                                    }
+                                                    val particularsIntent = Intent(this, ParticularsActivity::class.java)
+                                                    binding.profilePicture.setOnClickListener {
+                                                        startActivity(particularsIntent)
+                                                    }
+                                                    binding.profileAge.setOnClickListener {
+                                                        startActivity(particularsIntent)
+                                                    }
+                                                    binding.profileDescription.setOnClickListener {
+                                                        startActivity(particularsIntent)
+                                                    }
+                                                    binding.profileName.setOnClickListener {
+                                                        startActivity(particularsIntent)
                                                     }
                                                 } else if (friend) {
                                                     binding.btnProfile.text = "Unfriend"
@@ -265,12 +284,12 @@ class ProfileActivity : AppCompatActivity() {
         val curr = currUser
         val sign = signedInUser
         if (curr != null) {
-            firestoreDb.collection("friendrequests").document(signedInUser?.username as String)
-                .collection("sent").document(currUser?.username as String).set(curr)
+            firestoreDb.collection("friendrequests").document(userId as String)
+                .collection("sent").document(currUserId as String).set(curr)
         }
         if (sign != null) {
-            firestoreDb.collection("friendrequests").document(currUser?.username as String)
-                .collection("received").document(signedInUser?.username as String).set(sign)
+            firestoreDb.collection("friendrequests").document(currUserId as String)
+                .collection("received").document(userId as String).set(sign)
         }
 
         Toast.makeText(this, "Friend Request Sent...", Toast.LENGTH_SHORT).show()
@@ -280,20 +299,20 @@ class ProfileActivity : AppCompatActivity() {
 
     private fun rejectFriendRequest() {
         if (requestReceiver == true) {
-            firestoreDb.collection("friendrequests").document(signedInUser?.username as String)
-                .collection("received").document(currUser?.username as String).delete()
+            firestoreDb.collection("friendrequests").document(userId as String)
+                .collection("received").document(currUserId as String).delete()
 
-            firestoreDb.collection("friendrequests").document(currUser?.username as String)
-                .collection("sent").document(signedInUser?.username as String).delete()
+            firestoreDb.collection("friendrequests").document(currUserId as String)
+                .collection("sent").document(userId as String).delete()
 
             Toast.makeText(this, "Friend Request Rejected...", Toast.LENGTH_SHORT).show()
 
         } else {
-            firestoreDb.collection("friendrequests").document(signedInUser?.username as String)
-                .collection("sent").document(currUser?.username as String).delete()
+            firestoreDb.collection("friendrequests").document(userId as String)
+                .collection("sent").document(currUserId as String).delete()
 
-            firestoreDb.collection("friendrequests").document(currUser?.username as String)
-                .collection("received").document(signedInUser?.username as String).delete()
+            firestoreDb.collection("friendrequests").document(currUserId as String)
+                .collection("received").document(userId as String).delete()
 
             Toast.makeText(this, "Friend Request Cancelled...", Toast.LENGTH_SHORT).show()
 
@@ -307,19 +326,19 @@ class ProfileActivity : AppCompatActivity() {
         val curr = currUser
         val sign = signedInUser
         if (curr != null) {
-            firestoreDb.collection("friendlists").document(signedInUser?.username as String)
-                .collection("myfriends").document(currUser?.username as String).set(curr)
+            firestoreDb.collection("friendlists").document(userId as String)
+                .collection("myfriends").document(currUserId as String).set(curr)
         }
         if (sign != null) {
-            firestoreDb.collection("friendlists").document(currUser?.username as String)
-                .collection("myfriends").document(signedInUser?.username as String).set(sign)
+            firestoreDb.collection("friendlists").document(currUserId as String)
+                .collection("myfriends").document(userId as String).set(sign)
         }
 
-        firestoreDb.collection("friendrequests").document(signedInUser?.username as String)
-            .collection("received").document(currUser?.username as String).delete()
+        firestoreDb.collection("friendrequests").document(userId as String)
+            .collection("received").document(currUserId as String).delete()
 
-        firestoreDb.collection("friendrequests").document(currUser?.username as String)
-            .collection("sent").document(signedInUser?.username as String).delete()
+        firestoreDb.collection("friendrequests").document(currUserId as String)
+            .collection("sent").document(userId as String).delete()
 
         Toast.makeText(this, "Friend Request Accepted...", Toast.LENGTH_SHORT).show()
         finish()
@@ -330,12 +349,12 @@ class ProfileActivity : AppCompatActivity() {
         val curr = currUser
         val sign = signedInUser
         if (curr != null) {
-            firestoreDb.collection("friendlists").document(signedInUser?.username as String)
-                .collection("myfriends").document(currUser?.username as String).delete()
+            firestoreDb.collection("friendlists").document(userId as String)
+                .collection("myfriends").document(currUserId as String).delete()
         }
         if (sign != null) {
-            firestoreDb.collection("friendlists").document(currUser?.username as String)
-                .collection("myfriends").document(signedInUser?.username as String).delete()
+            firestoreDb.collection("friendlists").document(currUserId as String)
+                .collection("myfriends").document(userId as String).delete()
         }
         Toast.makeText(this, "Unfriended...", Toast.LENGTH_SHORT).show()
         finish()

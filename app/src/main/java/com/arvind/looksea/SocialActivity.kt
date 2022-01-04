@@ -17,6 +17,7 @@ private const val TAG = "SocialActivity"
 class SocialActivity : AppCompatActivity() {
 
     private var signedInUser: User? = null
+    private var userId: String? = ""
     private lateinit var firestoreDb: FirebaseFirestore
     private lateinit var binding: ActivitySocialBinding
 
@@ -33,7 +34,7 @@ class SocialActivity : AppCompatActivity() {
         adapterFriends = UserAdapter(this, friend)
         binding.rvFriends.adapter = adapterFriends
         binding.rvFriends.layoutManager = LinearLayoutManager(this)
-        firestoreDb.collection("friendlists").document(signedInUser?.username as String)
+        firestoreDb.collection("friendlists").document(userId as String)
             .collection("myfriends")
             .get()
             .addOnSuccessListener { requestSnapshots ->
@@ -60,14 +61,14 @@ class SocialActivity : AppCompatActivity() {
         adapterRequests = UserAdapter(this, request)
         binding.rvRequests.adapter = adapterRequests
         binding.rvRequests.layoutManager = LinearLayoutManager(this)
-        firestoreDb.collection("friendrequests").document(signedInUser?.username as String)
+        firestoreDb.collection("friendrequests").document(userId as String)
             .collection("received")
             .get()
             .addOnSuccessListener { receivedOnly ->
                 requestList = receivedOnly.toObjects((User::class.java))
                 request.clear()
                 request.addAll(requestList)
-                firestoreDb.collection("friendrequests").document(signedInUser?.username as String)
+                firestoreDb.collection("friendrequests").document(userId as String)
                     .collection("sent")
                     .get()
                     .addOnSuccessListener { requestSnapshots ->
@@ -94,9 +95,10 @@ class SocialActivity : AppCompatActivity() {
         binding = ActivitySocialBinding.inflate(layoutInflater)
         setContentView(binding.root)
         firestoreDb = FirebaseFirestore.getInstance()
+        userId = FirebaseAuth.getInstance().currentUser?.uid as String
 
         firestoreDb.collection("users")
-            .document(FirebaseAuth.getInstance().currentUser?.uid as String)
+            .document(userId!!)
             .get()
             .addOnSuccessListener { userSnapshot ->
                 signedInUser = userSnapshot.toObject(User::class.java)

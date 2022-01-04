@@ -31,6 +31,7 @@ private const val TAG = "CreateActivity"
 class CreateActivity : AppCompatActivity() {
 
     private var signedInUser: User? = null
+    private var userId: String? = ""
     private var fileType: String? = ""
     private lateinit var firestoreDb: FirebaseFirestore
     private lateinit var binding: ActivityCreateBinding
@@ -111,14 +112,15 @@ class CreateActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         storageReference = FirebaseStorage.getInstance().reference
+        userId = FirebaseAuth.getInstance().currentUser?.uid as String
 
         firestoreDb = FirebaseFirestore.getInstance()
         firestoreDb.collection("users")
-            .document(FirebaseAuth.getInstance().currentUser?.uid as String)
+            .document(userId!!)
             .get()
             .addOnSuccessListener { userSnapshot ->
                 signedInUser = userSnapshot.toObject(User::class.java)
-                Log.i(TAG, "Signed-In User: $signedInUser")
+                Log.i(TAG, "Signed-In User: $userId, $signedInUser")
             }
             .addOnFailureListener { exception ->
                 Log.i(TAG, "Failed to fetch signed-in user", exception)
@@ -231,7 +233,7 @@ class CreateActivity : AppCompatActivity() {
                     downloadUrlTask.result.toString(),
                     System.currentTimeMillis(),
                     location,
-                    signedInUser)
+                    userId)
                 firestoreDb.collection("posts").add(post)
             }.addOnCompleteListener { postCreationTask ->
                 binding.btnSubmit.isEnabled = true

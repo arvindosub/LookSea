@@ -33,6 +33,7 @@ private const val TAG = "PostActivity"
 
 class PostActivity : AppCompatActivity() {
     private var signedInUser: User? = null
+    private var userId: String? = ""
     private var post: Post? = null
     private var postId: String? = null
     private lateinit var firestoreDb: FirebaseFirestore
@@ -46,10 +47,11 @@ class PostActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         storageReference = FirebaseStorage.getInstance().reference
+        userId = FirebaseAuth.getInstance().currentUser?.uid as String
 
         firestoreDb = FirebaseFirestore.getInstance()
         firestoreDb.collection("users")
-            .document(FirebaseAuth.getInstance().currentUser?.uid as String)
+            .document(userId!!)
             .get()
             .addOnSuccessListener { userSnapshot ->
                 signedInUser = userSnapshot.toObject(User::class.java)
@@ -71,7 +73,7 @@ class PostActivity : AppCompatActivity() {
 
                         Glide.with(this).load(post?.fileUrl).into(binding.imageView)
                         binding.etDescription.hint = post?.description.toString()
-                        if (signedInUser == post?.user) {
+                        if (userId == post?.userId) {
                             binding.etDescription.isEnabled = true
                             binding.btnSubmit.isVisible = true
                             binding.btnDelete.isVisible = true
@@ -110,7 +112,8 @@ class PostActivity : AppCompatActivity() {
                 post?.fileUrl.toString(),
                 it,
                 post?.location as GeoPoint,
-                post?.user
+                post?.userId.toString(),
+                post?.username.toString()
             )
         }
         postId?.let {

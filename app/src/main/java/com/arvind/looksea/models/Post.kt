@@ -10,5 +10,6 @@ data class Post(
     @get:PropertyName("file_url") @set:PropertyName("file_url") var fileUrl: String = "",
     @get:PropertyName("creation_time_ms") @set:PropertyName("creation_time_ms") var creationTimeMs: Long = 0,
     var location: GeoPoint = GeoPoint(0.0, 0.0),
-    var user: User? = null
+    @get:PropertyName("user") @set:PropertyName("user") var userId: String? = "",
+    var username: String? = ""
 )

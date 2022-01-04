@@ -25,6 +25,9 @@
             android:name="com.arvind.looksea.ProfileActivity"
             android:exported="false" />
         <activity
+            android:name="com.arvind.looksea.ParticularsActivity"
+            android:exported="false" />
+        <activity
             android:name="com.arvind.looksea.SocialActivity"
             android:exported="false" />
         <activity

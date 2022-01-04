@@ -21,11 +21,13 @@ const val EXTRA_POSTTIME = "EXTRA_POSTTIME"
 open class HomeActivity : AppCompatActivity() {
 
     private var signedInUser: User? = null
+    private var userId: String? = ""
+    private var currUser: User? = null
+    private var currUserId: String? = ""
     private lateinit var firestoreDb: FirebaseFirestore
     private lateinit var posts: MutableList<Post>
     private lateinit var adapter: PostAdapter
     private lateinit var binding: ActivityHomeBinding
-    private lateinit var friendList: MutableList<User>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,9 +42,10 @@ open class HomeActivity : AppCompatActivity() {
         binding.rvPosts.adapter = adapter
         binding.rvPosts.layoutManager = LinearLayoutManager(this)
         firestoreDb = FirebaseFirestore.getInstance()
+        userId = FirebaseAuth.getInstance().currentUser?.uid as String
 
         firestoreDb.collection("users")
-            .document(FirebaseAuth.getInstance().currentUser?.uid as String)
+            .document(userId!!)
             .get()
             .addOnSuccessListener { userSnapshot ->
                 signedInUser = userSnapshot.toObject(User::class.java)
@@ -74,13 +77,18 @@ open class HomeActivity : AppCompatActivity() {
                     }
 
                 } else {
+                    var friendList: MutableList<String> = ArrayList()
+                    friendList.add(userId!!)
                     firestoreDb.collection("friendlists")
-                        .document(signedInUser?.username as String)
+                        .document(userId as String)
                         .collection("myfriends")
                         .get()
                         .addOnSuccessListener { friends ->
-                            friendList = friends.toObjects((User::class.java))
-                            friendList.add(signedInUser)
+                            friends.forEach { fr ->
+                                if (fr != null) {
+                                    friendList.add(fr.id)
+                                }
+                            }
                             Log.i(TAG, "Friends List: $friendList")
                             postsReference = postsReference.whereIn("user", friendList)
 
