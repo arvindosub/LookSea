@@ -142,6 +142,7 @@ class PostActivity : AppCompatActivity() {
                 labeler.process(image)
                     .addOnSuccessListener { labels ->
                         for (label in labels) {
+                            Toast.makeText(this@PostActivity, "${label.index}. ${label.text}: ${label.confidence}", Toast.LENGTH_SHORT).show()
                             Log.i(TAG, "${label.index}. ${label.text}: ${label.confidence}")
                         }
                     }

@@ -233,7 +233,8 @@ class CreateActivity : AppCompatActivity() {
                     downloadUrlTask.result.toString(),
                     System.currentTimeMillis(),
                     location,
-                    userId)
+                    userId,
+                    signedInUser?.username)
                 firestoreDb.collection("posts").add(post)
             }.addOnCompleteListener { postCreationTask ->
                 binding.btnSubmit.isEnabled = true

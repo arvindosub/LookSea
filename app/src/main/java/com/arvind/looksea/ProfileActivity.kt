@@ -140,8 +140,8 @@ class ProfileActivity : AppCompatActivity() {
                             currUser = doc.toObject((User::class.java))
                             currUserId = doc.id
                         }
-                        binding.profileAge.text = "age:   " + currUser?.age.toString()
-                        binding.profileDescription.text ="about me:   " + currUser?.description
+                        binding.profileAge.text = "Age:   " + currUser?.age.toString()
+                        binding.profileDescription.text = currUser?.description
                         Glide.with(applicationContext).load(currUser?.picture).into(binding.profilePicture)
                         Log.i(TAG, "Current User: $currUser")
 
