@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_margin="16dp"
+    android:layout_marginTop="8dp"
+    android:orientation="vertical"
+    tools:context=".SurveyActivity">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Survey"
+        android:textSize="30dp"
+        android:layout_marginTop="10dp"
+        android:textColor="@color/black" />
+
+    <TextView
+        android:id="@+id/tvQn1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:textSize="20dp"
+        android:textColor="@color/black"/>
+
+    <SeekBar
+        android:id="@+id/sbQn1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:max="10" />
+
+    <TextView
+        android:id="@+id/tvRes1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAlignment="center"
+        android:text="Rating" />
+
+    <TextView
+        android:id="@+id/tvQn2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:textSize="20dp"
+        android:textColor="@color/black"/>
+
+    <SeekBar
+        android:id="@+id/sbQn2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:max="10" />
+
+    <TextView
+        android:id="@+id/tvRes2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAlignment="center"
+        android:text="Rating" />
+
+    <Button
+        android:id="@+id/btnSubmit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:clickable="true"
+        android:text="Submit"
+        android:textSize="20dp"
+        android:backgroundTint="@color/colorSecondaryVariant"
+        android:textColor="@color/black" />
+
+</LinearLayout>

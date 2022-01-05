@@ -155,6 +155,11 @@ open class HomeActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
+        if (item.itemId == R.id.menu_survey) {
+            val intent = Intent(this, SurveyActivity::class.java)
+            startActivity(intent)
+        }
+
         if (item.itemId == R.id.menu_logout) {
             logout()
         }

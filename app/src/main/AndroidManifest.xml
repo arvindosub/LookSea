@@ -34,6 +34,9 @@
             android:name="com.arvind.looksea.SearchActivity"
             android:exported="false" />
         <activity
+            android:name="com.arvind.looksea.SurveyActivity"
+            android:exported="false" />
+        <activity
             android:name="com.arvind.looksea.HomeActivity"
             android:exported="false" />
         <activity
