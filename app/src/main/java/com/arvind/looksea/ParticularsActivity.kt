@@ -99,7 +99,7 @@ class ParticularsActivity : AppCompatActivity() {
                     Log.i(TAG, "Failed to fetch signed-in user", exception)
                 }
                 .addOnCompleteListener {
-                    if (imageUri == null) {
+                    if (imageUri == null && signedInUser?.picture != "") {
                         Glide.with(this).load(signedInUser?.picture).into(binding.profilePic)
                     }
                 }
