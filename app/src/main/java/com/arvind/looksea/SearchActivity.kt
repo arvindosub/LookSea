@@ -12,6 +12,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import androidx.core.widget.addTextChangedListener
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.arvind.looksea.databinding.ActivitySearchBinding
+import com.arvind.looksea.models.Post
 
 private const val TAG = "SearchActivity"
 
@@ -21,20 +22,16 @@ class SearchActivity : AppCompatActivity() {
     private lateinit var firestoreDb: FirebaseFirestore
     private lateinit var binding: ActivitySearchBinding
 
-    private lateinit var search: MutableList<User>
-    private lateinit var adapterSearch: UserAdapter
-    private lateinit var searchList: MutableList<User>
+    private lateinit var search: MutableList<Post>
+    private lateinit var adapterSearch: PostAdapter
+    private lateinit var searchList: MutableList<Post>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivitySearchBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        // Create the layout file which represents one post - DONE
-        // Create data source - DONE
         search = mutableListOf()
-        // Create the adapter
-        adapterSearch = UserAdapter(this, search)
-        // Bind the adapter and layout manager to the RV
+        adapterSearch = PostAdapter(this, search)
         binding.rvSearch.adapter = adapterSearch
         binding.rvSearch.layoutManager = LinearLayoutManager(this)
 
@@ -51,11 +48,11 @@ class SearchActivity : AppCompatActivity() {
                         search.clear()
                         adapterSearch.notifyDataSetChanged()
                     } else {
-                        firestoreDb.collection("users")
-                            .whereGreaterThanOrEqualTo("username", it.toString())
+                        firestoreDb.collection("posts")
+                            .whereGreaterThanOrEqualTo("description", it.toString())
                             .get()
                             .addOnSuccessListener { querySnapshots ->
-                                searchList = querySnapshots.toObjects((User::class.java))
+                                searchList = querySnapshots.toObjects((Post::class.java))
                                 Log.i(TAG, "$searchList")
                                 search.clear()
                                 search.addAll(searchList)
@@ -63,12 +60,12 @@ class SearchActivity : AppCompatActivity() {
                             }
                     }
                 }
-                adapterSearch.setOnItemClickListener(object : UserAdapter.onItemClickListener {
+                adapterSearch.setOnItemClickListener(object : PostAdapter.onItemClickListener {
                     override fun onItemClick(position: Int) {
-                        val person = searchList[position]
-                        Log.i(TAG, "$person")
-                        val intent = Intent(this@SearchActivity, ProfileActivity::class.java)
-                        intent.putExtra(EXTRA_USERNAME, person.username)
+                        val post= searchList[position]
+                        Log.i(TAG, "$post")
+                        val intent = Intent(this@SearchActivity, PostActivity::class.java)
+                        intent.putExtra(EXTRA_POSTTIME, post.creationTimeMs.toString())
                         startActivity(intent)
                     }
                 })

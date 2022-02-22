@@ -38,9 +38,9 @@ internal class FileAdapter(val context: Context, private val files: List<Post>) 
             convertView = layoutInflater!!.inflate(R.layout.item_file, null)
         }
         imageView = convertView!!.findViewById(R.id.imageView)
-        textView = convertView.findViewById(R.id.textView)
+        //textView = convertView.findViewById(R.id.textView)
         Glide.with(context).load(files[position].fileUrl).into(imageView)
-        textView.text = files[position].filename
+        //textView.text = files[position].description
         return convertView
     }
 }

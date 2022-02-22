@@ -73,6 +73,7 @@ class PostActivity : AppCompatActivity() {
 
                         Glide.with(this).load(post?.fileUrl).into(binding.imageView)
                         binding.etDescription.hint = post?.description.toString()
+                        binding.tvLikes.text = post?.likes.toString()
                         if (userId == post?.userId) {
                             binding.etDescription.isEnabled = true
                             binding.btnSubmit.isVisible = true
@@ -87,6 +88,10 @@ class PostActivity : AppCompatActivity() {
 
                         binding.btnAnalyse.setOnClickListener {
                             handleAnalysis()
+                        }
+
+                        binding.btnLike.setOnClickListener {
+                            likePost()
                         }
 
                     }
@@ -106,11 +111,11 @@ class PostActivity : AppCompatActivity() {
 
         val editedPost = post?.creationTimeMs?.let {
             Post(
-                post?.filename.toString(),
+                post?.creationTimeMs!!,
                 binding.etDescription.text.toString(),
                 post?.type.toString(),
+                post?.likes!!,
                 post?.fileUrl.toString(),
-                it,
                 post?.location as GeoPoint,
                 post?.userId.toString(),
                 post?.username.toString()
@@ -132,6 +137,44 @@ class PostActivity : AppCompatActivity() {
                     }
             }
         }
+    }
+
+    private fun likePost() {
+        val likes = post?.likes!!
+        postId?.let {
+            var isLiked = true
+            firestoreDb.collection("likedposts").document(userId as String)
+                .collection("posts").document(postId as String)
+                .get()
+                .addOnSuccessListener { likeSnapshot ->
+                    Log.i(TAG, "Liked? ${likeSnapshot}")
+                    if (likeSnapshot.data == null) {
+                        isLiked = false
+                    }
+                    Log.i(TAG, "isLiked? ${isLiked}")
+
+                    if (!isLiked) {
+                        firestoreDb.collection("posts").document(postId!!)
+                            .update("likes", likes+1)
+                            .addOnCompleteListener {
+                                Log.i(TAG, "Likes ${likes+1}")
+                                Toast.makeText(this, "Liked", Toast.LENGTH_SHORT).show()
+                                firestoreDb.collection("likedposts").document(userId as String)
+                                    .collection("posts").document(postId as String).set(post!!)
+                            }
+                    } else {
+                        firestoreDb.collection("posts").document(postId!!)
+                            .update("likes", likes-1)
+                            .addOnCompleteListener {
+                                Log.i(TAG, "Likes ${likes-1}")
+                                Toast.makeText(this, "Unliked", Toast.LENGTH_SHORT).show()
+                                firestoreDb.collection("likedposts").document(userId as String)
+                                    .collection("posts").document(postId as String).delete()
+                            }
+                    }
+                }
+        }
+        this.recreate()
     }
 
     private fun handleAnalysis() {
@@ -160,11 +203,11 @@ class PostActivity : AppCompatActivity() {
         val item = post
         var fpath = ""
         if (item?.type.toString() == "image") {
-            fpath = "images/${item?.filename}-photo.jpg"
+            fpath = "images/${item?.creationTimeMs}-photo.jpg"
         } else if (item?.type.toString() == "video") {
-            fpath = "videos/${item?.filename}-video.mp4"
+            fpath = "videos/${item?.creationTimeMs}-video.mp4"
         } else {
-            fpath = "audio/${item?.filename}-audio.mp3"
+            fpath = "audio/${item?.creationTimeMs}-audio.mp3"
         }
         val fileRef = storageReference.child(fpath)
         Log.i(TAG, "fpath is: ${fpath}")

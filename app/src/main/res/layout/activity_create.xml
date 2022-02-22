@@ -33,25 +33,6 @@
 
     </FrameLayout>
 
-    <EditText
-        android:id="@+id/etFilename"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_marginTop="8dp"
-        android:ems="10"
-        android:hint="Filename"
-        android:minHeight="48dp" />
-
-    <EditText
-        android:id="@+id/etDescription"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_marginTop="8dp"
-        android:ems="10"
-        android:hint="Description"
-        android:minHeight="48dp" />
-
-
     <RadioGroup
         android:id="@+id/rgType"
         android:layout_width="match_parent"
@@ -75,7 +56,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Audio" />
-
 
     </RadioGroup>
 
@@ -105,11 +85,30 @@
 
     </LinearLayout>
 
+    <EditText
+        android:id="@+id/etDescription"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Caption / Tags"
+        android:minHeight="48dp" />
+
+    <Button
+        android:id="@+id/btnSuggest"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:clickable="true"
+        android:backgroundTint="@color/colorSecondaryVariant"
+        android:textColor="@color/black"
+        android:layout_gravity="right"
+        android:text="Suggest" />
+
     <Button
         android:id="@+id/btnSubmit"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="30dp"
         android:clickable="true"
         android:text="Submit" />
 

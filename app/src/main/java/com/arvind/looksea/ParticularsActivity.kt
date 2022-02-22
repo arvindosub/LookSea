@@ -91,7 +91,6 @@ class ParticularsActivity : AppCompatActivity() {
                     Log.i(TAG, "Signed-In User: $signedInUser")
 
                     binding.tvUsername.text = signedInUser?.username.toString()
-                    binding.etAge.hint = signedInUser?.age.toString()
                     binding.etAbout.hint = signedInUser?.description.toString()
 
                 }
@@ -127,20 +126,13 @@ class ParticularsActivity : AppCompatActivity() {
     }
 
     private fun handleSubmitButtonClick() {
-        if (imageUri == null && binding.etAbout.text.isBlank() && binding.etAge.text.isBlank()) {
+        if (imageUri == null && binding.etAbout.text.isBlank()) {
             Toast.makeText(this, "No changes made...", Toast.LENGTH_SHORT).show()
             return
         }
 
-        var newAge = 0
         var newDesc = ""
         var newUrl = ""
-
-        if (binding.etAge.text.isBlank()) {
-            newAge = signedInUser?.age!!
-        } else {
-            newAge = binding.etAge.text.toString().toInt()
-        }
 
         if (binding.etAbout.text.isBlank()) {
             newDesc = signedInUser?.description.toString()
@@ -164,7 +156,6 @@ class ParticularsActivity : AppCompatActivity() {
                         // Edit user details
                         val user = User(
                             signedInUser?.username.toString(),
-                            newAge,
                             newDesc,
                             downloadUrlTask.result.toString()
                         )
@@ -191,7 +182,6 @@ class ParticularsActivity : AppCompatActivity() {
             newUrl = signedInUser?.picture.toString()
             val user = User(
                 signedInUser?.username.toString(),
-                newAge,
                 newDesc,
                 newUrl
             )

@@ -29,8 +29,7 @@ class RegisterActivity : AppCompatActivity() {
             val email = binding.etEmail.text.toString()
             val password = binding.etPassword.text.toString()
             val username = binding.etUsername.text.toString()
-            val age = binding.etAge.text.toString()
-            if (email.isBlank() || password.isBlank() || username.isBlank() || age.isBlank()) {
+            if (email.isBlank() || password.isBlank() || username.isBlank()) {
                 Toast.makeText(this, "All fields must be filled in!", Toast.LENGTH_SHORT).show()
                 binding.btnRegister.isEnabled = true
                 return@setOnClickListener
@@ -44,7 +43,6 @@ class RegisterActivity : AppCompatActivity() {
                         if (login.isSuccessful) {
                             val user = User(
                                 username,
-                                age.toInt(),
                                 "",
                                 ""
                             )
@@ -53,7 +51,7 @@ class RegisterActivity : AppCompatActivity() {
                                 .set(user)
                                 .addOnSuccessListener {
                                     Toast.makeText(this, "User Created and Logged-In!", Toast.LENGTH_SHORT).show()
-                                    goHomeActivity()
+                                    gotoProfileActivity()
                                 }
                                 .addOnFailureListener {
                                     Log.e(TAG, "createUserInFirestore: failure", regn.exception)
@@ -69,9 +67,9 @@ class RegisterActivity : AppCompatActivity() {
         }
     }
 
-    private fun goHomeActivity() {
+    private fun gotoProfileActivity() {
         Log.i(TAG, "goHomeActivity")
-        val intent = Intent(this, HomeActivity::class.java)
+        val intent = Intent(this, ProfileActivity::class.java)
         startActivity(intent)
     }
 

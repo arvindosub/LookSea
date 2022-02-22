@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import androidx.core.widget.addTextChangedListener
 import com.arvind.looksea.models.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -20,6 +21,10 @@ class SocialActivity : AppCompatActivity() {
     private var userId: String? = ""
     private lateinit var firestoreDb: FirebaseFirestore
     private lateinit var binding: ActivitySocialBinding
+
+    private lateinit var search: MutableList<User>
+    private lateinit var adapterSearch: UserAdapter
+    private lateinit var searchList: MutableList<User>
 
     private lateinit var friend: MutableList<User>
     private lateinit var adapterFriends: UserAdapter
@@ -94,6 +99,10 @@ class SocialActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivitySocialBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        search = mutableListOf()
+        adapterSearch = UserAdapter(this, search)
+        binding.rvSearch.adapter = adapterSearch
+        binding.rvSearch.layoutManager = LinearLayoutManager(this)
         firestoreDb = FirebaseFirestore.getInstance()
         userId = FirebaseAuth.getInstance().currentUser?.uid as String
 
@@ -106,6 +115,33 @@ class SocialActivity : AppCompatActivity() {
 
                 loadRequests()
                 loadFriends()
+
+                binding.etSearch.addTextChangedListener {
+                    if (it.toString() == "") {
+                        search.clear()
+                        adapterSearch.notifyDataSetChanged()
+                    } else {
+                        firestoreDb.collection("users")
+                            .whereGreaterThanOrEqualTo("username", it.toString())
+                            .get()
+                            .addOnSuccessListener { querySnapshots ->
+                                searchList = querySnapshots.toObjects((User::class.java))
+                                Log.i(TAG, "$searchList")
+                                search.clear()
+                                search.addAll(searchList)
+                                adapterSearch.notifyDataSetChanged()
+                            }
+                    }
+                }
+                adapterSearch.setOnItemClickListener(object : UserAdapter.onItemClickListener {
+                    override fun onItemClick(position: Int) {
+                        val person = searchList[position]
+                        Log.i(TAG, "$person")
+                        val intent = Intent(this@SocialActivity, ProfileActivity::class.java)
+                        intent.putExtra(EXTRA_USERNAME, person.username)
+                        startActivity(intent)
+                    }
+                })
 
             }.addOnFailureListener { exception ->
                 Log.i(TAG, "Failed to fetch signed-in user", exception)

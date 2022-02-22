@@ -74,6 +74,7 @@ class PostAdapter (val context: Context, private val posts: List<Post>) : Recycl
             }
             Glide.with(context).load(getProfileImageUrl(username)).into(itemView.findViewById<ImageView>(R.id.ivProfileImage))
             itemView.findViewById<TextView>(R.id.tvRelativeTime).text = DateUtils.getRelativeTimeSpanString(post.creationTimeMs)
+            itemView.findViewById<TextView>(R.id.tvLikes).text = post.likes.toString()
         }
         init {
             itemView.setOnClickListener {

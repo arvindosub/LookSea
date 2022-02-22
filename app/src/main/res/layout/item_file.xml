@@ -9,14 +9,4 @@
         android:id="@+id/imageView"
         android:layout_width="100dp"
         android:layout_height="80dp" />
-    <TextView
-        android:id="@+id/textView"
-        android:textAlignment="center"
-        android:gravity="center"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="Filename"
-        android:textColor="@color/black"
-        android:textSize="14sp" />
 </LinearLayout>

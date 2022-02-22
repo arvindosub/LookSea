@@ -140,7 +140,6 @@ class ProfileActivity : AppCompatActivity() {
                             currUser = doc.toObject((User::class.java))
                             currUserId = doc.id
                         }
-                        binding.profileAge.text = "Age:   " + currUser?.age.toString()
                         binding.profileDescription.text = currUser?.description
                         Glide.with(applicationContext).load(currUser?.picture).into(binding.profilePicture)
                         Log.i(TAG, "Current User: $currUser")
@@ -184,9 +183,6 @@ class ProfileActivity : AppCompatActivity() {
                                                     }
                                                     val particularsIntent = Intent(this, ParticularsActivity::class.java)
                                                     binding.profilePicture.setOnClickListener {
-                                                        startActivity(particularsIntent)
-                                                    }
-                                                    binding.profileAge.setOnClickListener {
                                                         startActivity(particularsIntent)
                                                     }
                                                     binding.profileDescription.setOnClickListener {

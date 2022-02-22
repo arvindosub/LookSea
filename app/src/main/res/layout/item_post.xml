@@ -25,11 +25,27 @@
 
             <TextView
                 android:id="@+id/tvUsername"
-                android:layout_width="match_parent"
+                android:layout_width="275dp"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="8dp"
                 android:textAppearance="@style/TextAppearance.AppCompat.Large"
-                tools:text="arvind" />
+                tools:text="username" />
+
+            <ImageButton
+                android:id="@+id/btnLike"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_like" />
+
+            <TextView
+                android:id="@+id/tvLikes"
+                android:layout_width="40dp"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.AppCompat.Large"
+                tools:text="xxxx"
+                android:layout_marginLeft="5dp"
+                android:textSize="16dp" />
 
         </LinearLayout>
 

@@ -2,6 +2,8 @@ package com.arvind.looksea
 
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -21,9 +23,15 @@ import com.google.firebase.storage.StorageReference
 import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.firestore.GeoPoint
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.label.ImageLabeling
+import com.google.mlkit.vision.label.defaults.ImageLabelerOptions
 import java.io.File
 
 private const val TAG = "CreateActivity"
@@ -33,6 +41,7 @@ class CreateActivity : AppCompatActivity() {
     private var signedInUser: User? = null
     private var userId: String? = ""
     private var fileType: String? = ""
+    private var creationTime: Long? = 0
     private lateinit var firestoreDb: FirebaseFirestore
     private lateinit var binding: ActivityCreateBinding
     private lateinit var storageReference: StorageReference
@@ -179,18 +188,53 @@ class CreateActivity : AppCompatActivity() {
 
         }
 
+        creationTime = System.currentTimeMillis()
+
+        binding.btnSuggest.setOnClickListener {
+            handleAnalysis()
+        }
+
         binding.btnSubmit.setOnClickListener {
             handleSubmitButtonClick()
         }
     }
 
+    private fun handleAnalysis() {
+        var myUri: Uri? = null
+        var tagString = ""
+        if (imageUri != null) {
+            myUri = imageUri
+        } else if (videoUri != null) {
+            myUri = videoUri
+        } else {
+            myUri = audioUri
+        }
+        Glide.with(this).asBitmap().load(myUri).into(object : CustomTarget<Bitmap?>() {
+            override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap?>?) {
+                val image = InputImage.fromBitmap(resource, 0)
+                val labeler = ImageLabeling.getClient(ImageLabelerOptions.DEFAULT_OPTIONS)
+                labeler.process(image)
+                    .addOnSuccessListener { labels ->
+                        for (label in labels) {
+                            tagString += "${label.text.lowercase()} | "
+                            Log.i(TAG, "${label.index}. ${label.text}: ${label.confidence}")
+                        }
+                        tagString = tagString.dropLast(3)
+                        Log.i(TAG, tagString)
+                        binding.etDescription.setText(tagString)
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e(TAG, "$e")
+                    }
+            }
+
+            override fun onLoadCleared(placeholder: Drawable?) {}
+        })
+    }
+
     private fun handleSubmitButtonClick() {
         if (imageUri == null && videoUri == null && audioUri == null) {
             Toast.makeText(this, "No video/image selected", Toast.LENGTH_SHORT).show()
-            return
-        }
-        if (binding.etFilename.text.isBlank()) {
-            Toast.makeText(this, "Please include a filename", Toast.LENGTH_SHORT).show()
             return
         }
         if (binding.etDescription.text.isBlank()) {
@@ -207,14 +251,14 @@ class CreateActivity : AppCompatActivity() {
             fileUploadUri = videoUri as Uri
             fileType = "video"
             //fileReference = storageReference.child("videos/${System.currentTimeMillis()}-video.mp4")
-            fileReference = storageReference.child("videos/${binding.etFilename.text}-video.mp4")
+            fileReference = storageReference.child("videos/${creationTime}-video.mp4")
         } else if (binding.rgbImage.isChecked) {
             fileUploadUri = imageUri as Uri
-            fileReference = storageReference.child("images/${binding.etFilename.text}-photo.jpg")
+            fileReference = storageReference.child("images/${creationTime}-photo.jpg")
             fileType = "image"
         } else if (binding.rgbAudio.isChecked) {
             fileUploadUri = imageUri as Uri
-            fileReference = storageReference.child("audio/${binding.etFilename.text}-audio.mp3")
+            fileReference = storageReference.child("audio/${creationTime}-audio.mp3")
             fileType = "audio"
         }
 
@@ -226,16 +270,18 @@ class CreateActivity : AppCompatActivity() {
                 fileReference.downloadUrl
             }.continueWithTask { downloadUrlTask ->
                 // Create a post object with the file url and add it to posts collection
-                val post = Post(
-                    binding.etFilename.text.toString(),
-                    binding.etDescription.text.toString(),
-                    fileType.toString(),
-                    downloadUrlTask.result.toString(),
-                    System.currentTimeMillis(),
-                    location,
-                    userId,
-                    signedInUser?.username)
-                firestoreDb.collection("posts").add(post)
+                val post = creationTime?.let {
+                    Post(
+                        it,
+                        binding.etDescription.text.toString(),
+                        fileType.toString(),
+                        0,
+                        downloadUrlTask.result.toString(),
+                        location,
+                        userId,
+                        signedInUser?.username)
+                }
+                post?.let { firestoreDb.collection("posts").add(it) }!!
             }.addOnCompleteListener { postCreationTask ->
                 binding.btnSubmit.isEnabled = true
                 if (!postCreationTask.isSuccessful) {
