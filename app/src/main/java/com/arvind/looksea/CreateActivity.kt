@@ -216,10 +216,10 @@ class CreateActivity : AppCompatActivity() {
                 labeler.process(image)
                     .addOnSuccessListener { labels ->
                         for (label in labels) {
-                            tagString += "${label.text.lowercase()} | "
+                            tagString += "#${label.text.lowercase()} "
                             Log.i(TAG, "${label.index}. ${label.text}: ${label.confidence}")
                         }
-                        tagString = tagString.dropLast(3)
+                        tagString = tagString.dropLast(1)
                         Log.i(TAG, tagString)
                         binding.etDescription.setText(tagString)
                     }
@@ -233,13 +233,13 @@ class CreateActivity : AppCompatActivity() {
     }
 
     private fun handleSubmitButtonClick() {
+        var desc: String? = binding.etDescription.text.toString()
         if (imageUri == null && videoUri == null && audioUri == null) {
             Toast.makeText(this, "No video/image selected", Toast.LENGTH_SHORT).show()
             return
         }
         if (binding.etDescription.text.isBlank()) {
-            Toast.makeText(this, "Description cannot be empty", Toast.LENGTH_SHORT).show()
-            return
+            desc = ""
         }
         if (signedInUser == null) {
             Toast.makeText(this, "No signed-in user...", Toast.LENGTH_SHORT).show()
@@ -273,7 +273,7 @@ class CreateActivity : AppCompatActivity() {
                 val post = creationTime?.let {
                     Post(
                         it,
-                        binding.etDescription.text.toString(),
+                        desc!!,
                         fileType.toString(),
                         0,
                         downloadUrlTask.result.toString(),
@@ -282,12 +282,38 @@ class CreateActivity : AppCompatActivity() {
                         signedInUser?.username)
                 }
                 post?.let { firestoreDb.collection("posts").add(it) }!!
-            }.addOnCompleteListener { postCreationTask ->
-                binding.btnSubmit.isEnabled = true
-                if (!postCreationTask.isSuccessful) {
-                    Log.e(TAG, "Exception during Firebase operations", postCreationTask.exception)
-                    Toast.makeText(this, "Failed to save post...", Toast.LENGTH_SHORT).show()
+            }.addOnSuccessListener { postCreationTask ->
+                var tagList : Array<String> = emptyArray()
+                if (!binding.etDescription.text.isBlank()) {
+                    var tagList : Array<String> = desc!!.split(" ").toTypedArray()
+
+                    for (item in tagList) {
+                        var tag = item
+                        var value = ""
+                        if (item.contains("=")) {
+                            tag = item.split("=").toTypedArray()[0]
+                            value = item.split("=").toTypedArray()[1]
+                        }
+                        Log.i(TAG, "Tag: $tag, Value: $value")
+
+                        val tagVal = hashMapOf(
+                            "value" to value
+                        )
+                        val nullVal = hashMapOf(
+                            "value" to null
+                        )
+
+                        if (value == "") {
+                            firestoreDb.collection("tags").document(userId as String)
+                                .collection(postCreationTask.id).document(tag).set(nullVal)
+                        } else {
+                            firestoreDb.collection("tags").document(userId as String)
+                                .collection(postCreationTask.id).document(tag).set(tagVal)
+                        }
+                    }
                 }
+
+                binding.btnSubmit.isEnabled = true
                 binding.etDescription.text.clear()
                 binding.imageView.setImageResource(0)
                 binding.videoView.setVideoURI(null)
@@ -298,6 +324,9 @@ class CreateActivity : AppCompatActivity() {
                 profileIntent.putExtra(EXTRA_USERNAME, signedInUser?.username)
                 startActivity(profileIntent)
                 finish()
+            }.addOnFailureListener { error ->
+                Log.e(TAG, "Exception during Firebase operations", error)
+                Toast.makeText(this, "Failed to save post...", Toast.LENGTH_SHORT).show()
             }
     }
 }

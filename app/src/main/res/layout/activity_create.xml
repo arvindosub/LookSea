@@ -92,7 +92,9 @@
         android:layout_marginTop="8dp"
         android:ems="10"
         android:hint="Caption / Tags"
-        android:minHeight="48dp" />
+        android:minHeight="48dp"
+        android:inputType="textMultiLine"
+        android:maxLines="5" />
 
     <Button
         android:id="@+id/btnSuggest"

@@ -2,6 +2,8 @@ package com.arvind.looksea
 
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -20,9 +22,14 @@ import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.firestore.GeoPoint
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.label.ImageLabeling
+import com.google.mlkit.vision.label.defaults.ImageLabelerOptions
 import java.io.File
 
 private const val TAG = "ParticularsActivity"
@@ -90,7 +97,7 @@ class ParticularsActivity : AppCompatActivity() {
                     signedInUser = userSnapshot.toObject(User::class.java)
                     Log.i(TAG, "Signed-In User: $signedInUser")
 
-                    binding.tvUsername.text = signedInUser?.username.toString()
+                    binding.etUsername.hint = signedInUser?.username.toString()
                     binding.etAbout.hint = signedInUser?.description.toString()
 
                 }
@@ -100,6 +107,8 @@ class ParticularsActivity : AppCompatActivity() {
                 .addOnCompleteListener {
                     if (imageUri == null && signedInUser?.picture != "") {
                         Glide.with(this).load(signedInUser?.picture).into(binding.profilePic)
+                    } else {
+                        Glide.with(this).load("https://firebasestorage.googleapis.com/v0/b/looksea-43f7d.appspot.com/o/profilepics%2Fdefault_icon.png?alt=media&token=7e6d6755-726d-4f02-ae75-f74cda6dd748").into(binding.profilePic)
                     }
                 }
         }
@@ -120,24 +129,64 @@ class ParticularsActivity : AppCompatActivity() {
             fetchLocation()
         }
 
+        binding.btnSuggest.setOnClickListener {
+            handleAnalysis()
+        }
+
         binding.btnSubmit.setOnClickListener {
             handleSubmitButtonClick()
         }
     }
 
+    private fun handleAnalysis() {
+        var myUri: Uri? = null
+        var tagString = ""
+        if (imageUri != null) {
+            myUri = imageUri
+        }
+        Glide.with(this).asBitmap().load(myUri).into(object : CustomTarget<Bitmap?>() {
+            override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap?>?) {
+                val image = InputImage.fromBitmap(resource, 0)
+                val labeler = ImageLabeling.getClient(ImageLabelerOptions.DEFAULT_OPTIONS)
+                labeler.process(image)
+                    .addOnSuccessListener { labels ->
+                        for (label in labels) {
+                            tagString += "#${label.text.lowercase()} "
+                            Log.i(TAG, "${label.index}. ${label.text}: ${label.confidence}")
+                        }
+                        tagString = tagString.dropLast(1)
+                        Log.i(TAG, tagString)
+                        binding.etAbout.setText(tagString)
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e(TAG, "$e")
+                    }
+            }
+
+            override fun onLoadCleared(placeholder: Drawable?) {}
+        })
+    }
+
     private fun handleSubmitButtonClick() {
-        if (imageUri == null && binding.etAbout.text.isBlank()) {
+        if (imageUri == null && binding.etAbout.text.isBlank() && binding.etUsername.text.isBlank()) {
             Toast.makeText(this, "No changes made...", Toast.LENGTH_SHORT).show()
             return
         }
 
         var newDesc = ""
         var newUrl = ""
+        var newUsername = ""
 
         if (binding.etAbout.text.isBlank()) {
             newDesc = signedInUser?.description.toString()
         } else {
             newDesc = binding.etAbout.text.toString()
+        }
+
+        if (binding.etUsername.text.isBlank()) {
+            newUsername = signedInUser?.username.toString()
+        } else {
+            newUsername = binding.etUsername.text.toString()
         }
 
         binding.btnSubmit.isEnabled = false
@@ -155,7 +204,7 @@ class ParticularsActivity : AppCompatActivity() {
                     }.continueWithTask { downloadUrlTask ->
                         // Edit user details
                         val user = User(
-                            signedInUser?.username.toString(),
+                            newUsername,
                             newDesc,
                             downloadUrlTask.result.toString()
                         )
@@ -169,11 +218,41 @@ class ParticularsActivity : AppCompatActivity() {
                                 userUpdateTask.exception
                             )
                             Toast.makeText(this, "Failed to update user...", Toast.LENGTH_SHORT).show()
+                        } else {
+                            var tagList : Array<String> = emptyArray()
+                            if (!binding.etAbout.text.isBlank()) {
+                                var tagList : Array<String> = newDesc!!.split(" ").toTypedArray()
+
+                                for (item in tagList) {
+                                    var tag = item
+                                    var value = ""
+                                    if (item.contains("=")) {
+                                        tag = item.split("=").toTypedArray()[0]
+                                        value = item.split("=").toTypedArray()[1]
+                                    }
+                                    Log.i(TAG, "Tag: $tag, Value: $value")
+
+                                    val tagVal = hashMapOf(
+                                        "value" to value
+                                    )
+                                    val nullVal = hashMapOf(
+                                        "value" to null
+                                    )
+
+                                    if (value == "") {
+                                        firestoreDb.collection("tags").document(userId as String)
+                                            .collection(userId as String).document(tag).set(nullVal)
+                                    } else {
+                                        firestoreDb.collection("tags").document(userId as String)
+                                            .collection(userId as String).document(tag).set(tagVal)
+                                    }
+                                }
+                            }
                         }
 
                         Toast.makeText(this, "User profile updated!", Toast.LENGTH_SHORT).show()
                         val profileIntent = Intent(this, ProfileActivity::class.java)
-                        profileIntent.putExtra(EXTRA_USERNAME, signedInUser?.username)
+                        profileIntent.putExtra(EXTRA_USERNAME, newUsername)
                         startActivity(profileIntent)
                         finish()
                     }
@@ -181,7 +260,7 @@ class ParticularsActivity : AppCompatActivity() {
         } else {
             newUrl = signedInUser?.picture.toString()
             val user = User(
-                signedInUser?.username.toString(),
+                newUsername,
                 newDesc,
                 newUrl
             )
@@ -199,7 +278,7 @@ class ParticularsActivity : AppCompatActivity() {
 
                     Toast.makeText(this, "User profile updated!", Toast.LENGTH_SHORT).show()
                     val profileIntent = Intent(this, ProfileActivity::class.java)
-                    profileIntent.putExtra(EXTRA_USERNAME, signedInUser?.username)
+                    profileIntent.putExtra(EXTRA_USERNAME, newUsername)
                     startActivity(profileIntent)
                     finish()
                 }

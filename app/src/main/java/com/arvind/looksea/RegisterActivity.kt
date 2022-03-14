@@ -28,8 +28,7 @@ class RegisterActivity : AppCompatActivity() {
             binding.btnRegister.isEnabled = false
             val email = binding.etEmail.text.toString()
             val password = binding.etPassword.text.toString()
-            val username = binding.etUsername.text.toString()
-            if (email.isBlank() || password.isBlank() || username.isBlank()) {
+            if (email.isBlank() || password.isBlank()) {
                 Toast.makeText(this, "All fields must be filled in!", Toast.LENGTH_SHORT).show()
                 binding.btnRegister.isEnabled = true
                 return@setOnClickListener
@@ -41,21 +40,26 @@ class RegisterActivity : AppCompatActivity() {
                 if (regn.isSuccessful) {
                     auth.signInWithEmailAndPassword(email, password).addOnCompleteListener { login ->
                         if (login.isSuccessful) {
+                            val userId = auth.currentUser?.uid as String
                             val user = User(
-                                username,
+                                userId,
                                 "",
                                 ""
                             )
                             firestoreDb.collection("users")
-                                .document(auth.currentUser?.uid as String)
+                                .document(userId)
                                 .set(user)
-                                .addOnSuccessListener {
+                                .addOnCompleteListener { userCreationTask ->
+                                    if (!userCreationTask.isSuccessful) {
+                                        Log.e(TAG, "createUserInFirestore: failure", regn.exception)
+                                        Toast.makeText(this, "User Creation Failed...", Toast.LENGTH_SHORT).show()
+                                    }
+                                    Log.i(TAG, "User Created and Logged-In!")
                                     Toast.makeText(this, "User Created and Logged-In!", Toast.LENGTH_SHORT).show()
-                                    gotoProfileActivity()
-                                }
-                                .addOnFailureListener {
-                                    Log.e(TAG, "createUserInFirestore: failure", regn.exception)
-                                    Toast.makeText(this, "User Creation Failed...", Toast.LENGTH_SHORT).show()
+                                    val profileIntent = Intent(this, ProfileActivity::class.java)
+                                    profileIntent.putExtra(EXTRA_USERNAME, userId)
+                                    startActivity(profileIntent)
+                                    finish()
                                 }
                         }
                     }
@@ -66,11 +70,4 @@ class RegisterActivity : AppCompatActivity() {
             }
         }
     }
-
-    private fun gotoProfileActivity() {
-        Log.i(TAG, "goHomeActivity")
-        val intent = Intent(this, ProfileActivity::class.java)
-        startActivity(intent)
-    }
-
 }
