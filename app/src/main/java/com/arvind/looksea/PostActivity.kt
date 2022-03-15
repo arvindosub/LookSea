@@ -94,11 +94,22 @@ class PostActivity : AppCompatActivity() {
                             likePost()
                         }
 
+                        binding.fabLink.setOnClickListener {
+                            handleLinkButtonClick()
+                        }
+
                     }
             }
             .addOnFailureListener { exception ->
                 Log.i(TAG, "Failed to fetch signed-in user", exception)
             }
+    }
+
+    private fun handleLinkButtonClick() {
+        val id = postId
+        val intent = Intent(this, LinkActivity::class.java)
+        intent.putExtra(EXTRA_ARTIFACTID, id)
+        startActivity(intent)
     }
 
     private fun handleSubmitButtonClick() {
@@ -213,12 +224,22 @@ class PostActivity : AppCompatActivity() {
         Log.i(TAG, "fpath is: ${fpath}")
 
         firestoreDb.collection("posts").document(id as String).delete().addOnCompleteListener {
-            fileRef.delete().addOnCompleteListener {
-                Toast.makeText(this, "Deleted post...", Toast.LENGTH_SHORT).show()
-                finish()
-                val intent = Intent(this, ProfileActivity::class.java)
-                intent.putExtra(EXTRA_USERNAME, signedInUser?.username)
-                startActivity(intent)
+            firestoreDb.collection("tags").document(userId as String).collection(id).get().addOnSuccessListener { tags ->
+                tags.forEach { tag ->
+                    firestoreDb.collection("tags").document(userId as String).collection(id).document(tag.id).delete()
+                }
+                firestoreDb.collection("links").document(userId as String).collection(id).get().addOnSuccessListener { links ->
+                    links.forEach { link ->
+                        firestoreDb.collection("links").document(userId as String).collection(id).document(link.id).delete()
+                    }
+                }
+                fileRef.delete().addOnCompleteListener {
+                    Toast.makeText(this, "Deleted post...", Toast.LENGTH_SHORT).show()
+                    finish()
+                    val intent = Intent(this, ProfileActivity::class.java)
+                    intent.putExtra(EXTRA_USERNAME, signedInUser?.username)
+                    startActivity(intent)
+                }
             }
         }
     }

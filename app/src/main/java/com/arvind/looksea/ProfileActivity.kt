@@ -136,7 +136,7 @@ class ProfileActivity : AppCompatActivity() {
                     .whereEqualTo("username", username)
                     .get()
                     .addOnSuccessListener { userSnapshot ->
-                        userSnapshot.forEach{ doc ->
+                        userSnapshot.forEach { doc ->
                             currUser = doc.toObject((User::class.java))
                             currUserId = doc.id
                         }
@@ -235,6 +235,10 @@ class ProfileActivity : AppCompatActivity() {
                                                 loadVideos()
                                                 loadAudio()
 
+                                                binding.fabLink.setOnClickListener {
+                                                    handleLinkButtonClick()
+                                                }
+
                                             }
                                     }
                             }
@@ -244,6 +248,13 @@ class ProfileActivity : AppCompatActivity() {
                 Log.i(TAG, "Failed to fetch signed-in user", exception)
             }
 
+    }
+
+    private fun handleLinkButtonClick() {
+        val id = userId
+        val intent = Intent(this, LinkActivity::class.java)
+        intent.putExtra(EXTRA_ARTIFACTID, id)
+        startActivity(intent)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

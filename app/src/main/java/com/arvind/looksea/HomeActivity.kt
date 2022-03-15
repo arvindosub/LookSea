@@ -17,6 +17,7 @@ import com.google.firebase.firestore.Query
 private const val TAG = "HomeActivity"
 const val EXTRA_USERNAME = "EXTRA_USERNAME"
 const val EXTRA_POSTTIME = "EXTRA_POSTTIME"
+const val EXTRA_ARTIFACTID = "EXTRA_ARTIFACTID"
 
 open class HomeActivity : AppCompatActivity() {
 

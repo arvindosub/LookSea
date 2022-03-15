@@ -49,7 +49,7 @@ class SearchActivity : AppCompatActivity() {
                         adapterSearch.notifyDataSetChanged()
                     } else {
                         firestoreDb.collection("posts")
-                            .whereGreaterThanOrEqualTo("description", it.toString())
+                            .whereGreaterThanOrEqualTo("description", "#"+it.toString())
                             .get()
                             .addOnSuccessListener { querySnapshots ->
                                 searchList = querySnapshots.toObjects((Post::class.java))
