@@ -42,7 +42,7 @@ class RegisterActivity : AppCompatActivity() {
                         if (login.isSuccessful) {
                             val userId = auth.currentUser?.uid as String
                             val user = User(
-                                userId,
+                                "newUser",
                                 "",
                                 ""
                             )
