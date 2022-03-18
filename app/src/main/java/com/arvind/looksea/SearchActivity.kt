@@ -36,7 +36,7 @@ class SearchActivity : AppCompatActivity() {
         binding.rvSearch.layoutManager = LinearLayoutManager(this)
 
         firestoreDb = FirebaseFirestore.getInstance()
-        firestoreDb.collection("users")
+        firestoreDb.collection("artifacts")
             .document(FirebaseAuth.getInstance().currentUser?.uid as String)
             .get()
             .addOnSuccessListener { userSnapshot ->
@@ -48,7 +48,8 @@ class SearchActivity : AppCompatActivity() {
                         search.clear()
                         adapterSearch.notifyDataSetChanged()
                     } else {
-                        firestoreDb.collection("posts")
+                        firestoreDb.collection("artifacts")
+                            .whereIn("type", mutableListOf("image", "video", "audio"))
                             .whereGreaterThanOrEqualTo("description", "#"+it.toString())
                             .get()
                             .addOnSuccessListener { querySnapshots ->

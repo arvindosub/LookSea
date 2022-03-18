@@ -106,7 +106,7 @@ class SocialActivity : AppCompatActivity() {
         firestoreDb = FirebaseFirestore.getInstance()
         userId = FirebaseAuth.getInstance().currentUser?.uid as String
 
-        firestoreDb.collection("users")
+        firestoreDb.collection("artifacts")
             .document(userId!!)
             .get()
             .addOnSuccessListener { userSnapshot ->
@@ -121,7 +121,8 @@ class SocialActivity : AppCompatActivity() {
                         search.clear()
                         adapterSearch.notifyDataSetChanged()
                     } else {
-                        firestoreDb.collection("users")
+                        firestoreDb.collection("artifacts")
+                            .whereEqualTo("type", "user")
                             .whereGreaterThanOrEqualTo("username", it.toString())
                             .get()
                             .addOnSuccessListener { querySnapshots ->

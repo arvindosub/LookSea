@@ -45,15 +45,14 @@ open class HomeActivity : AppCompatActivity() {
         firestoreDb = FirebaseFirestore.getInstance()
         userId = FirebaseAuth.getInstance().currentUser?.uid as String
 
-        firestoreDb.collection("users")
+        firestoreDb.collection("artifacts")
             .document(userId!!)
             .get()
             .addOnSuccessListener { userSnapshot ->
                 signedInUser = userSnapshot.toObject(User::class.java)
                 Log.i(TAG, "Signed-In User: $signedInUser")
 
-                var postsReference = firestoreDb
-                    .collection("posts")
+                var postsReference = firestoreDb.collection("artifacts")
                     .limit(20)
                     .orderBy("creation_time_ms", Query.Direction.DESCENDING)
 

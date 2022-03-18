@@ -44,9 +44,10 @@ class RegisterActivity : AppCompatActivity() {
                             val user = User(
                                 "newUser",
                                 "",
-                                ""
+                                "",
+                                "user"
                             )
-                            firestoreDb.collection("users")
+                            firestoreDb.collection("artifacts")
                                 .document(userId)
                                 .set(user)
                                 .addOnCompleteListener { userCreationTask ->
@@ -57,7 +58,7 @@ class RegisterActivity : AppCompatActivity() {
                                     Log.i(TAG, "User Created and Logged-In!")
                                     Toast.makeText(this, "User Created and Logged-In!", Toast.LENGTH_SHORT).show()
                                     val profileIntent = Intent(this, ProfileActivity::class.java)
-                                    profileIntent.putExtra(EXTRA_USERNAME, userId)
+                                    profileIntent.putExtra(EXTRA_USERNAME, "newUser")
                                     startActivity(profileIntent)
                                     finish()
                                 }

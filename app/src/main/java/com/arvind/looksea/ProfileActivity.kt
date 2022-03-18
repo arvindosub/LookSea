@@ -38,7 +38,7 @@ class ProfileActivity : AppCompatActivity() {
         adapterImages = FileAdapter(this, images)
         imageGridView.adapter = adapterImages
 
-        firestoreDb.collection("posts").whereEqualTo("user", currUserId)
+        firestoreDb.collection("artifacts").whereEqualTo("user", currUserId)
             .whereEqualTo("type", "image")
             .get()
             .addOnSuccessListener { myPosts ->
@@ -67,7 +67,7 @@ class ProfileActivity : AppCompatActivity() {
         adapterVideos = FileAdapter(this, videos)
         videoGridView.adapter = adapterVideos
 
-        firestoreDb.collection("posts").whereEqualTo("user", currUserId)
+        firestoreDb.collection("artifacts").whereEqualTo("user", currUserId)
             .whereEqualTo("type", "video")
             .get()
             .addOnSuccessListener { myPosts ->
@@ -96,7 +96,7 @@ class ProfileActivity : AppCompatActivity() {
         adapterAudio = FileAdapter(this, audio)
         audioGridView.adapter = adapterAudio
 
-        firestoreDb.collection("posts").whereEqualTo("user", currUserId)
+        firestoreDb.collection("artifacts").whereEqualTo("user", currUserId)
             .whereEqualTo("type", "audio")
             .get()
             .addOnSuccessListener { myPosts ->
@@ -126,13 +126,13 @@ class ProfileActivity : AppCompatActivity() {
 
         firestoreDb = FirebaseFirestore.getInstance()
         userId = FirebaseAuth.getInstance().currentUser?.uid as String
-        firestoreDb.collection("users")
+        firestoreDb.collection("artifacts")
             .document(userId!!)
             .get()
             .addOnSuccessListener { userSnapshot ->
                 signedInUser = userSnapshot.toObject(User::class.java)
                 Log.i(TAG, "Signed-In User: $signedInUser")
-                firestoreDb.collection("users")
+                firestoreDb.collection("artifacts")
                     .whereEqualTo("username", username)
                     .get()
                     .addOnSuccessListener { userSnapshot ->

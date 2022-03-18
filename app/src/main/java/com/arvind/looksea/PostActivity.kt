@@ -50,14 +50,14 @@ class PostActivity : AppCompatActivity() {
         userId = FirebaseAuth.getInstance().currentUser?.uid as String
 
         firestoreDb = FirebaseFirestore.getInstance()
-        firestoreDb.collection("users")
+        firestoreDb.collection("artifacts")
             .document(userId!!)
             .get()
             .addOnSuccessListener { userSnapshot ->
                 signedInUser = userSnapshot.toObject(User::class.java)
 
                 val posttime = intent.getStringExtra(EXTRA_POSTTIME)
-                firestoreDb.collection("posts")
+                firestoreDb.collection("artifacts")
                     .whereEqualTo("creation_time_ms", posttime?.toLong())
                     .get()
                     .addOnSuccessListener { response ->
@@ -78,6 +78,7 @@ class PostActivity : AppCompatActivity() {
                             binding.etDescription.isEnabled = true
                             binding.btnSubmit.isVisible = true
                             binding.btnDelete.isVisible = true
+                            binding.btnAnalyse.text = "Suggest"
                             binding.btnSubmit.setOnClickListener {
                                 handleSubmitButtonClick()
                             }
@@ -134,7 +135,7 @@ class PostActivity : AppCompatActivity() {
         }
         postId?.let {
             if (editedPost != null) {
-                firestoreDb.collection("posts").document(it)
+                firestoreDb.collection("artifacts").document(it)
                     .set(editedPost)
                     .addOnCompleteListener { postCreationTask ->
                         binding.btnSubmit.isEnabled = true
@@ -155,7 +156,7 @@ class PostActivity : AppCompatActivity() {
         postId?.let {
             var isLiked = true
             firestoreDb.collection("likedposts").document(userId as String)
-                .collection("posts").document(postId as String)
+                .collection("artifacts").document(postId as String)
                 .get()
                 .addOnSuccessListener { likeSnapshot ->
                     Log.i(TAG, "Liked? ${likeSnapshot}")
@@ -165,22 +166,22 @@ class PostActivity : AppCompatActivity() {
                     Log.i(TAG, "isLiked? ${isLiked}")
 
                     if (!isLiked) {
-                        firestoreDb.collection("posts").document(postId!!)
+                        firestoreDb.collection("artifacts").document(postId!!)
                             .update("likes", likes+1)
                             .addOnCompleteListener {
                                 Log.i(TAG, "Likes ${likes+1}")
                                 Toast.makeText(this, "Liked", Toast.LENGTH_SHORT).show()
                                 firestoreDb.collection("likedposts").document(userId as String)
-                                    .collection("posts").document(postId as String).set(post!!)
+                                    .collection("artifacts").document(postId as String).set(post!!)
                             }
                     } else {
-                        firestoreDb.collection("posts").document(postId!!)
+                        firestoreDb.collection("artifacts").document(postId!!)
                             .update("likes", likes-1)
                             .addOnCompleteListener {
                                 Log.i(TAG, "Likes ${likes-1}")
                                 Toast.makeText(this, "Unliked", Toast.LENGTH_SHORT).show()
                                 firestoreDb.collection("likedposts").document(userId as String)
-                                    .collection("posts").document(postId as String).delete()
+                                    .collection("artifacts").document(postId as String).delete()
                             }
                     }
                 }
@@ -189,15 +190,26 @@ class PostActivity : AppCompatActivity() {
     }
 
     private fun handleAnalysis() {
+        var tagString = ""
         Glide.with(this).asBitmap().load(post?.fileUrl).into(object : CustomTarget<Bitmap?>() {
             override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap?>?) {
                 val image = InputImage.fromBitmap(resource, 0)
                 val labeler = ImageLabeling.getClient(ImageLabelerOptions.DEFAULT_OPTIONS)
                 labeler.process(image)
                     .addOnSuccessListener { labels ->
-                        for (label in labels) {
-                            Toast.makeText(this@PostActivity, "${label.index}. ${label.text}: ${label.confidence}", Toast.LENGTH_SHORT).show()
-                            Log.i(TAG, "${label.index}. ${label.text}: ${label.confidence}")
+                        if (userId == post?.userId) {
+                            for (label in labels) {
+                                tagString += "#${label.text.lowercase()} "
+                                Log.i(TAG, "${label.index}. ${label.text}: ${label.confidence}")
+                            }
+                            tagString = tagString.dropLast(1)
+                            Log.i(TAG, tagString)
+                            binding.etDescription.setText(tagString)
+                        } else {
+                            for (label in labels) {
+                                Toast.makeText(this@PostActivity, "${label.index}. ${label.text}: ${label.confidence}", Toast.LENGTH_SHORT).show()
+                                Log.i(TAG, "${label.index}. ${label.text}: ${label.confidence}")
+                            }
                         }
                     }
                     .addOnFailureListener { e ->
@@ -223,7 +235,7 @@ class PostActivity : AppCompatActivity() {
         val fileRef = storageReference.child(fpath)
         Log.i(TAG, "fpath is: ${fpath}")
 
-        firestoreDb.collection("posts").document(id as String).delete().addOnCompleteListener {
+        firestoreDb.collection("artifacts").document(id as String).delete().addOnCompleteListener {
             firestoreDb.collection("tags").document(userId as String).collection(id).get().addOnSuccessListener { tags ->
                 tags.forEach { tag ->
                     firestoreDb.collection("tags").document(userId as String).collection(id).document(tag.id).delete()

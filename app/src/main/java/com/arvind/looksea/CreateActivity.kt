@@ -124,7 +124,7 @@ class CreateActivity : AppCompatActivity() {
         userId = FirebaseAuth.getInstance().currentUser?.uid as String
 
         firestoreDb = FirebaseFirestore.getInstance()
-        firestoreDb.collection("users")
+        firestoreDb.collection("artifacts")
             .document(userId!!)
             .get()
             .addOnSuccessListener { userSnapshot ->
@@ -281,7 +281,7 @@ class CreateActivity : AppCompatActivity() {
                         userId,
                         signedInUser?.username)
                 }
-                post?.let { firestoreDb.collection("posts").add(it) }!!
+                post?.let { firestoreDb.collection("artifacts").add(it) }!!
             }.addOnSuccessListener { postCreationTask ->
                 var tagList : Array<String> = emptyArray()
                 if (!binding.etDescription.text.isBlank()) {

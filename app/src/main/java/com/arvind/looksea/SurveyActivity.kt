@@ -53,7 +53,7 @@ class SurveyActivity : AppCompatActivity() {
         userId = FirebaseAuth.getInstance().currentUser?.uid as String
 
         firestoreDb = FirebaseFirestore.getInstance()
-        firestoreDb.collection("users")
+        firestoreDb.collection("artifacts")
             .document(userId!!)
             .get()
             .addOnSuccessListener { userSnapshot ->
@@ -124,7 +124,7 @@ class SurveyActivity : AppCompatActivity() {
             qn2.toString(),
             res2!!
         )
-        firestoreDb.collection("surveys").add(surv!!)
+        firestoreDb.collection("artifacts").add(surv!!)
             .addOnCompleteListener {
                 binding.btnSubmit.isEnabled = true
                 Toast.makeText(this, "Survey submitted!", Toast.LENGTH_SHORT).show()
