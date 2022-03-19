@@ -21,6 +21,7 @@ import androidx.core.view.isVisible
 import androidx.core.widget.addTextChangedListener
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.arvind.looksea.databinding.ActivityLinkBinding
+import com.arvind.looksea.models.Link
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
@@ -73,20 +74,22 @@ class LinkActivity : AppCompatActivity() {
                             .get()
                             .addOnSuccessListener { querySnapshots ->
                                 searchList = querySnapshots.toObjects((Post::class.java))
-                                querySnapshots.forEach { doc ->
-                                    idList.add(doc.id)
-                                }
+
                                 Log.i(TAG, "$idList")
                                 Log.i(TAG, "$searchList")
                                 search.clear()
                                 search.addAll(searchList)
                                 adapterSearch.notifyDataSetChanged()
+                                idList.clear()
+                                querySnapshots.forEach { doc ->
+                                    idList.add(doc.id)
+                                }
                             }
                     }
                 }
                 adapterSearch.setOnItemClickListener(object : PostAdapter.onItemClickListener {
                     override fun onItemClick(position: Int) {
-                        val artifactId= idList[position]
+                        val artifactId = idList[position]
                         binding.etLinkedItem.setText(artifactId)
                         Log.i(TAG, "$artifactId")
                     }
@@ -109,37 +112,35 @@ class LinkActivity : AppCompatActivity() {
         }
 
         binding.btnSubmit.isEnabled = false
-        val postId = intent.getStringExtra(EXTRA_ARTIFACTID)
-        val linkName = binding.etLinkName.text.toString()
-        val searchId = binding.etLinkedItem.text.toString()
+        var postId = intent.getStringExtra(EXTRA_ARTIFACTID)
+        var linkName = binding.etLinkName.text.toString()
+        var searchId = binding.etLinkedItem.text.toString()
+        var linkVal = Link(
+            linkName,
+            "$userId"
+        )
 
-        firestoreDb.collection("links").document(userId as String)
-            .collection(postId as String).document(linkName).set(hashMapOf("0" to "0"))
+        firestoreDb.collection("links").document(postId as String)
+            .collection("link").document(searchId).set(linkVal)
             .addOnCompleteListener {
-                firestoreDb.collection("links").document(userId as String)
-                    .collection(postId as String).document(linkName).get()
-                    .addOnSuccessListener { document ->
-                        var ind = document.data!!.size
-                        Log.i(TAG, "$ind")
-                        val linkVal = hashMapOf(
-                            "$ind" to searchId
-                        )
-
-                        firestoreDb.collection("links").document(userId as String)
-                            .collection(postId as String).document(linkName).set(linkVal)
-                            .addOnCompleteListener { linkCreationTask ->
-                                binding.btnSubmit.isEnabled = true
-                                if (!linkCreationTask.isSuccessful) {
-                                    Log.e(TAG, "Exception during Firebase operations", linkCreationTask.exception)
-                                    Toast.makeText(this, "Failed to link post...", Toast.LENGTH_SHORT).show()
-                                }
-                                Toast.makeText(this, "Post linked!", Toast.LENGTH_SHORT).show()
-                                finish()
-                            }
+                postId = searchId
+                searchId = intent.getStringExtra(EXTRA_ARTIFACTID).toString()
+                var linkVal = Link(
+                    linkName,
+                    "$userId"
+                )
+                firestoreDb.collection("links").document(postId as String)
+                    .collection("link").document(searchId).set(linkVal)
+                    .addOnCompleteListener { linkCreationTask ->
+                        binding.btnSubmit.isEnabled = true
+                        if (!linkCreationTask.isSuccessful) {
+                            Log.e(TAG, "Exception during Firebase operations", linkCreationTask.exception)
+                            Toast.makeText(this, "Failed to link post...", Toast.LENGTH_SHORT).show()
+                        }
+                        Toast.makeText(this, "Post linked!", Toast.LENGTH_SHORT).show()
+                        finish()
                     }
-
             }
-
     }
 
 }

@@ -11,6 +11,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import com.arvind.looksea.databinding.ActivityProfileBinding
+import com.arvind.looksea.models.Link
 import com.arvind.looksea.models.Post
 import com.arvind.looksea.models.User
 import com.bumptech.glide.Glide
@@ -133,6 +134,7 @@ class ProfileActivity : AppCompatActivity() {
                 signedInUser = userSnapshot.toObject(User::class.java)
                 Log.i(TAG, "Signed-In User: $signedInUser")
                 firestoreDb.collection("artifacts")
+                    .whereEqualTo("type", "user")
                     .whereEqualTo("username", username)
                     .get()
                     .addOnSuccessListener { userSnapshot ->
@@ -341,14 +343,13 @@ class ProfileActivity : AppCompatActivity() {
     private fun acceptFriendRequest() {
         val curr = currUser
         val sign = signedInUser
-        if (curr != null) {
-            firestoreDb.collection("friendlists").document(userId as String)
-                .collection("myfriends").document(currUserId as String).set(curr)
-        }
-        if (sign != null) {
-            firestoreDb.collection("friendlists").document(currUserId as String)
-                .collection("myfriends").document(userId as String).set(sign)
-        }
+        //firestoreDb.collection("friendlists").document(userId as String).collection("myfriends").document(currUserId as String).set(curr!!)
+        //firestoreDb.collection("friendlists").document(currUserId as String).collection("myfriends").document(userId as String).set(sign!!)
+
+        firestoreDb.collection("links").document(userId as String)
+            .collection("friend").document(currUserId as String).set(Link("friends","$userId"))
+        firestoreDb.collection("links").document(currUserId as String)
+            .collection("friend").document(userId as String).set(Link("friends","$currUserId"))
 
         firestoreDb.collection("friendrequests").document(userId as String)
             .collection("received").document(currUserId as String).delete()
@@ -362,16 +363,14 @@ class ProfileActivity : AppCompatActivity() {
     }
 
     private fun removeFriend() {
-        val curr = currUser
-        val sign = signedInUser
-        if (curr != null) {
-            firestoreDb.collection("friendlists").document(userId as String)
-                .collection("myfriends").document(currUserId as String).delete()
-        }
-        if (sign != null) {
-            firestoreDb.collection("friendlists").document(currUserId as String)
-                .collection("myfriends").document(userId as String).delete()
-        }
+        //firestoreDb.collection("friendlists").document(userId as String).collection("myfriends").document(currUserId as String).delete()
+        //firestoreDb.collection("friendlists").document(currUserId as String).collection("myfriends").document(userId as String).delete()
+
+        firestoreDb.collection("links").document(userId as String)
+            .collection("friend").document(currUserId as String).delete()
+        firestoreDb.collection("links").document(currUserId as String)
+            .collection("friend").document(userId as String).delete()
+
         Toast.makeText(this, "Unfriended...", Toast.LENGTH_SHORT).show()
         finish()
         startActivity(getIntent())

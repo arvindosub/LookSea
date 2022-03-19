@@ -19,13 +19,16 @@ import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 import androidx.core.view.isVisible
 import com.arvind.looksea.databinding.ActivityPostBinding
+import com.arvind.looksea.models.Link
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.google.firebase.firestore.GeoPoint
+import com.google.firebase.firestore.ktx.toObject
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.label.ImageLabeling
 import com.google.mlkit.vision.label.defaults.ImageLabelerOptions
+import org.json.JSONObject
 import java.io.File
 import java.nio.file.Paths
 
@@ -222,7 +225,7 @@ class PostActivity : AppCompatActivity() {
     }
 
     private fun deletePost() {
-        val id = postId
+        val pid = postId as String
         val item = post
         var fpath = ""
         if (item?.type.toString() == "image") {
@@ -234,23 +237,30 @@ class PostActivity : AppCompatActivity() {
         }
         val fileRef = storageReference.child(fpath)
         Log.i(TAG, "fpath is: ${fpath}")
+        var linkList = mutableListOf<String>()
 
-        firestoreDb.collection("artifacts").document(id as String).delete().addOnCompleteListener {
-            firestoreDb.collection("tags").document(userId as String).collection(id).get().addOnSuccessListener { tags ->
+        firestoreDb.collection("artifacts").document(pid).delete().addOnCompleteListener {
+            firestoreDb.collection("tags").document(userId as String).collection(pid).get().addOnSuccessListener { tags ->
                 tags.forEach { tag ->
-                    firestoreDb.collection("tags").document(userId as String).collection(id).document(tag.id).delete()
+                    firestoreDb.collection("tags").document(userId as String).collection(pid).document(tag.id).delete()
                 }
-                firestoreDb.collection("links").document(userId as String).collection(id).get().addOnSuccessListener { links ->
-                    links.forEach { link ->
-                        firestoreDb.collection("links").document(userId as String).collection(id).document(link.id).delete()
+                firestoreDb.collection("links").document(pid).collection("link").get().addOnSuccessListener { linkSnapshots ->
+                    linkSnapshots.forEach { link ->
+                        linkList.add(link.id)
+                        firestoreDb.collection("links").document(pid).collection("link").document(link.id).delete()
                     }
-                }
-                fileRef.delete().addOnCompleteListener {
-                    Toast.makeText(this, "Deleted post...", Toast.LENGTH_SHORT).show()
-                    finish()
-                    val intent = Intent(this, ProfileActivity::class.java)
-                    intent.putExtra(EXTRA_USERNAME, signedInUser?.username)
-                    startActivity(intent)
+                    Log.i(TAG, "linkList is: $linkList")
+
+                    linkList.forEach { item ->
+                        firestoreDb.collection("links").document(item).collection("link").document(pid).delete()
+                    }
+                    fileRef.delete().addOnCompleteListener {
+                        Toast.makeText(this, "Deleted post...", Toast.LENGTH_SHORT).show()
+                        finish()
+                        val intent = Intent(this, ProfileActivity::class.java)
+                        intent.putExtra(EXTRA_USERNAME, signedInUser?.username)
+                        startActivity(intent)
+                    }
                 }
             }
         }

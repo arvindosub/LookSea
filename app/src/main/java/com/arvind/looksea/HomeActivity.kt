@@ -79,9 +79,9 @@ open class HomeActivity : AppCompatActivity() {
                 } else {
                     var friendList: MutableList<String> = ArrayList()
                     friendList.add(userId!!)
-                    firestoreDb.collection("friendlists")
+                    firestoreDb.collection("links")
                         .document(userId as String)
-                        .collection("myfriends")
+                        .collection("friend")
                         .get()
                         .addOnSuccessListener { friends ->
                             friends.forEach { fr ->
