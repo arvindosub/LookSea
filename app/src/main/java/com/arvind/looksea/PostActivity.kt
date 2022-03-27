@@ -141,6 +141,36 @@ class PostActivity : AppCompatActivity() {
                 firestoreDb.collection("artifacts").document(it)
                     .set(editedPost)
                     .addOnCompleteListener { postCreationTask ->
+                        if (binding.etDescription.text.isNotBlank() && binding.etDescription.text.contains("#")) {
+                            var tagList : Array<String> = binding.etDescription.text.split(" ").toTypedArray()
+
+                            for (item in tagList) {
+                                if (item.startsWith("#")) {
+                                    var tag = item
+                                    var value = ""
+                                    if (item.contains("=")) {
+                                        tag = item.split("=").toTypedArray()[0]
+                                        value = item.split("=").toTypedArray()[1]
+                                    }
+                                    Log.i(TAG, "Tag: $tag, Value: $value")
+
+                                    val tagVal = hashMapOf(
+                                        "value" to value
+                                    )
+                                    val nullVal = hashMapOf(
+                                        "value" to null
+                                    )
+
+                                    if (value == "") {
+                                        firestoreDb.collection("tags").document(userId as String)
+                                            .collection(postId!!).document(tag).set(nullVal)
+                                    } else {
+                                        firestoreDb.collection("tags").document(userId as String)
+                                            .collection(postId!!).document(tag).set(tagVal)
+                                    }
+                                }
+                            }
+                        }
                         binding.btnSubmit.isEnabled = true
                         if (!postCreationTask.isSuccessful) {
                             Log.e(TAG, "Exception during Firebase operations", postCreationTask.exception)
@@ -158,8 +188,8 @@ class PostActivity : AppCompatActivity() {
         val likes = post?.likes!!
         postId?.let {
             var isLiked = true
-            firestoreDb.collection("likedposts").document(userId as String)
-                .collection("artifacts").document(postId as String)
+            firestoreDb.collection("links").document(userId as String)
+                .collection("liked").document(postId as String)
                 .get()
                 .addOnSuccessListener { likeSnapshot ->
                     Log.i(TAG, "Liked? ${likeSnapshot}")
@@ -174,8 +204,16 @@ class PostActivity : AppCompatActivity() {
                             .addOnCompleteListener {
                                 Log.i(TAG, "Likes ${likes+1}")
                                 Toast.makeText(this, "Liked", Toast.LENGTH_SHORT).show()
-                                firestoreDb.collection("likedposts").document(userId as String)
-                                    .collection("artifacts").document(postId as String).set(post!!)
+                                var link = Link(
+                                    "liked",
+                                    "$userId"
+                                )
+                                firestoreDb.collection("links").document(userId as String)
+                                    .collection("liked").document(postId as String).set(link)
+                                    .addOnCompleteListener {
+                                        firestoreDb.collection("links").document(postId as String)
+                                            .collection("liked").document(userId as String).set(link)
+                                    }
                             }
                     } else {
                         firestoreDb.collection("artifacts").document(postId!!)
@@ -183,8 +221,12 @@ class PostActivity : AppCompatActivity() {
                             .addOnCompleteListener {
                                 Log.i(TAG, "Likes ${likes-1}")
                                 Toast.makeText(this, "Unliked", Toast.LENGTH_SHORT).show()
-                                firestoreDb.collection("likedposts").document(userId as String)
-                                    .collection("artifacts").document(postId as String).delete()
+                                firestoreDb.collection("links").document(userId as String)
+                                    .collection("liked").document(postId as String).delete()
+                                    .addOnCompleteListener {
+                                        firestoreDb.collection("links").document(postId as String)
+                                            .collection("liked").document(userId as String).delete()
+                                    }
                             }
                     }
                 }
@@ -238,28 +280,49 @@ class PostActivity : AppCompatActivity() {
         val fileRef = storageReference.child(fpath)
         Log.i(TAG, "fpath is: ${fpath}")
         var linkList = mutableListOf<String>()
+        var likeList = mutableListOf<String>()
 
         firestoreDb.collection("artifacts").document(pid).delete().addOnCompleteListener {
+            firestoreDb.collection("links").document(userId as String).collection("owned").document(pid).delete()
+            firestoreDb.collection("links").document(pid).collection("owned").document(userId as String).delete()
+
+            firestoreDb.collection("links").document(userId as String).collection("liked").document(pid).delete()
+            firestoreDb.collection("links").document(pid).collection("liked").document(userId as String).delete()
+
             firestoreDb.collection("tags").document(userId as String).collection(pid).get().addOnSuccessListener { tags ->
                 tags.forEach { tag ->
                     firestoreDb.collection("tags").document(userId as String).collection(pid).document(tag.id).delete()
                 }
-                firestoreDb.collection("links").document(pid).collection("link").get().addOnSuccessListener { linkSnapshots ->
+                firestoreDb.collection("links").document(pid).collection("linked").get().addOnSuccessListener { linkSnapshots ->
                     linkSnapshots.forEach { link ->
                         linkList.add(link.id)
-                        firestoreDb.collection("links").document(pid).collection("link").document(link.id).delete()
+                        firestoreDb.collection("links").document(pid).collection("linked").document(link.id).delete()
                     }
                     Log.i(TAG, "linkList is: $linkList")
 
                     linkList.forEach { item ->
-                        firestoreDb.collection("links").document(item).collection("link").document(pid).delete()
+                        firestoreDb.collection("links").document(item).collection("linked").document(pid).delete()
                     }
-                    fileRef.delete().addOnCompleteListener {
-                        Toast.makeText(this, "Deleted post...", Toast.LENGTH_SHORT).show()
-                        finish()
-                        val intent = Intent(this, ProfileActivity::class.java)
-                        intent.putExtra(EXTRA_USERNAME, signedInUser?.username)
-                        startActivity(intent)
+                }.addOnSuccessListener {
+                    firestoreDb.collection("links").document(pid).collection("liked").get().addOnSuccessListener { likeSnapshots ->
+                        likeSnapshots.forEach { like ->
+                            likeList.add(like.id)
+                            firestoreDb.collection("links").document(pid).collection("liked")
+                                .document(like.id).delete()
+                        }
+                        Log.i(TAG, "likeList is: $likeList")
+
+                        likeList.forEach { item ->
+                            firestoreDb.collection("links").document(item).collection("liked")
+                                .document(pid).delete()
+                        }
+                        fileRef.delete().addOnCompleteListener {
+                            Toast.makeText(this, "Deleted post...", Toast.LENGTH_SHORT).show()
+                            finish()
+                            val intent = Intent(this, ProfileActivity::class.java)
+                            intent.putExtra(EXTRA_USERNAME, signedInUser?.username)
+                            startActivity(intent)
+                        }
                     }
                 }
             }

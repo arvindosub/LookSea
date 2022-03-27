@@ -57,6 +57,18 @@
             android:layout_height="wrap_content"
             android:text="Audio" />
 
+        <RadioButton
+            android:id="@+id/rgbText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Text" />
+
+        <RadioButton
+            android:id="@+id/rgbSurvey"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Survey" />
+
     </RadioGroup>
 
     <LinearLayout

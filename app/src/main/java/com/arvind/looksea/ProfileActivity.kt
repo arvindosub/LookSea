@@ -116,6 +116,35 @@ class ProfileActivity : AppCompatActivity() {
             }
     }
 
+    private lateinit var text: MutableList<Post>
+    private lateinit var adapterText: FileAdapter
+    private lateinit var textList: MutableList<Post>
+    private lateinit var textGridView: GridView
+    private fun loadText() {
+        text = mutableListOf()
+        textGridView = binding.gvText
+        adapterText = FileAdapter(this, text)
+        textGridView.adapter = adapterText
+
+        firestoreDb.collection("artifacts").whereEqualTo("user", currUserId)
+            .whereEqualTo("type", "text")
+            .get()
+            .addOnSuccessListener { myPosts ->
+                textList = myPosts.toObjects((Post::class.java))
+                Log.i(TAG, "$textList")
+                text.clear()
+                text.addAll(textList)
+                adapterText.notifyDataSetChanged()
+
+                textGridView.onItemClickListener =
+                    AdapterView.OnItemClickListener { _, _, position, _ ->
+                        val intent = Intent(this@ProfileActivity, PostActivity::class.java)
+                        intent.putExtra(EXTRA_POSTTIME, text[position].creationTimeMs.toString())
+                        startActivity(intent)
+                    }
+            }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
@@ -170,8 +199,8 @@ class ProfileActivity : AppCompatActivity() {
                                             requestReceiver = true
                                         }
 
-                                        firestoreDb.collection("friendlists").document(userId as String)
-                                            .collection("myfriends").document(currUserId as String)
+                                        firestoreDb.collection("links").document(userId as String)
+                                            .collection("friend").document(currUserId as String)
                                             .get()
                                             .addOnSuccessListener { friendResult ->
                                                 Log.i(TAG, "FRIEND: ${friendResult.data}")
@@ -235,6 +264,7 @@ class ProfileActivity : AppCompatActivity() {
 
                                                 loadImages()
                                                 loadVideos()
+                                                loadText()
                                                 loadAudio()
 
                                                 binding.fabLink.setOnClickListener {
@@ -347,9 +377,9 @@ class ProfileActivity : AppCompatActivity() {
         //firestoreDb.collection("friendlists").document(currUserId as String).collection("myfriends").document(userId as String).set(sign!!)
 
         firestoreDb.collection("links").document(userId as String)
-            .collection("friend").document(currUserId as String).set(Link("friends","$userId"))
+            .collection("friend").document(currUserId as String).set(Link("friend","$userId"))
         firestoreDb.collection("links").document(currUserId as String)
-            .collection("friend").document(userId as String).set(Link("friends","$currUserId"))
+            .collection("friend").document(userId as String).set(Link("friend","$currUserId"))
 
         firestoreDb.collection("friendrequests").document(userId as String)
             .collection("received").document(currUserId as String).delete()

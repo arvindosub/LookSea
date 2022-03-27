@@ -23,6 +23,7 @@ import com.google.firebase.storage.StorageReference
 import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import com.arvind.looksea.models.Link
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
@@ -188,6 +189,22 @@ class CreateActivity : AppCompatActivity() {
 
         }
 
+        binding.rgbText.setOnClickListener {
+            binding.btnChooseFile.isVisible = false
+            binding.btnCaptureNow.isVisible = false
+
+            fetchLocation()
+
+        }
+
+        binding.rgbSurvey.setOnClickListener {
+            binding.btnChooseFile.isVisible = false
+            binding.btnCaptureNow.isVisible = false
+
+            fetchLocation()
+
+        }
+
         creationTime = System.currentTimeMillis()
 
         binding.btnSuggest.setOnClickListener {
@@ -200,7 +217,11 @@ class CreateActivity : AppCompatActivity() {
     }
 
     private fun handleAnalysis() {
-        var myUri: Uri? = null
+        if (imageUri == null && videoUri == null && audioUri == null) {
+            Toast.makeText(this, "No video/image selected", Toast.LENGTH_SHORT).show()
+            return
+        }
+        var myUri: Uri?
         var tagString = ""
         if (imageUri != null) {
             myUri = imageUri
@@ -234,10 +255,6 @@ class CreateActivity : AppCompatActivity() {
 
     private fun handleSubmitButtonClick() {
         var desc: String? = binding.etDescription.text.toString()
-        if (imageUri == null && videoUri == null && audioUri == null) {
-            Toast.makeText(this, "No video/image selected", Toast.LENGTH_SHORT).show()
-            return
-        }
         if (binding.etDescription.text.isBlank()) {
             desc = ""
         }
@@ -246,87 +263,172 @@ class CreateActivity : AppCompatActivity() {
             return
         }
 
-        binding.btnSubmit.isEnabled = false
-        if (binding.rgbVideo.isChecked) {
-            fileUploadUri = videoUri as Uri
-            fileType = "video"
-            //fileReference = storageReference.child("videos/${System.currentTimeMillis()}-video.mp4")
-            fileReference = storageReference.child("videos/${creationTime}-video.mp4")
-        } else if (binding.rgbImage.isChecked) {
-            fileUploadUri = imageUri as Uri
-            fileReference = storageReference.child("images/${creationTime}-photo.jpg")
-            fileType = "image"
-        } else if (binding.rgbAudio.isChecked) {
-            fileUploadUri = imageUri as Uri
-            fileReference = storageReference.child("audio/${creationTime}-audio.mp3")
-            fileType = "audio"
-        }
+        if (imageUri == null && videoUri == null && audioUri == null) {
+            binding.btnSubmit.isEnabled = false
 
-        // Upload file to Firebase Storage
-        fileReference.putFile(fileUploadUri)
-            .continueWithTask { fileUploadTask ->
-                Log.i(TAG, "uploaded bytes: ${fileUploadTask.result?.bytesTransferred}")
-                // Retrieve url of uploaded file to Firestore
-                fileReference.downloadUrl
-            }.continueWithTask { downloadUrlTask ->
-                // Create a post object with the file url and add it to posts collection
-                val post = creationTime?.let {
-                    Post(
-                        it,
-                        desc!!,
-                        fileType.toString(),
-                        0,
-                        downloadUrlTask.result.toString(),
-                        location,
-                        userId,
-                        signedInUser?.username)
-                }
-                post?.let { firestoreDb.collection("artifacts").add(it) }!!
-            }.addOnSuccessListener { postCreationTask ->
-                var tagList : Array<String> = emptyArray()
-                if (!binding.etDescription.text.isBlank()) {
-                    var tagList : Array<String> = desc!!.split(" ").toTypedArray()
+            if (binding.rgbText.isChecked) {
+                fileType = "text"
+            } else if (binding.rgbSurvey.isChecked) {
+                fileType = "survey"
+            }
 
-                    for (item in tagList) {
-                        var tag = item
-                        var value = ""
-                        if (item.contains("=")) {
-                            tag = item.split("=").toTypedArray()[0]
-                            value = item.split("=").toTypedArray()[1]
-                        }
-                        Log.i(TAG, "Tag: $tag, Value: $value")
+            val post = Post(
+                creationTime!!,
+                desc!!,
+                fileType!!,
+                0,
+                "NA",
+                location,
+                userId,
+                signedInUser?.username
+            )
 
-                        val tagVal = hashMapOf(
-                            "value" to value
-                        )
-                        val nullVal = hashMapOf(
-                            "value" to null
-                        )
+            firestoreDb.collection("artifacts").add(post)
+                .addOnSuccessListener { postCreationTask ->
+                    var link = Link(
+                        "owned",
+                        "$userId"
+                    )
+                    firestoreDb.collection("links").document(postCreationTask.id)
+                        .collection("owned").document(userId as String).set(link)
+                    firestoreDb.collection("links").document(userId as String)
+                        .collection("owned").document(postCreationTask.id).set(link)
+                    if (binding.etDescription.text.isNotBlank() && binding.etDescription.text.contains("#")) {
+                        var tagList : Array<String> = desc.split(" ").toTypedArray()
 
-                        if (value == "") {
-                            firestoreDb.collection("tags").document(userId as String)
-                                .collection(postCreationTask.id).document(tag).set(nullVal)
-                        } else {
-                            firestoreDb.collection("tags").document(userId as String)
-                                .collection(postCreationTask.id).document(tag).set(tagVal)
+                        for (item in tagList) {
+                            var tag = item
+                            var value = ""
+                            if (item.contains("=")) {
+                                tag = item.split("=").toTypedArray()[0]
+                                value = item.split("=").toTypedArray()[1]
+                            }
+                            Log.i(TAG, "Tag: $tag, Value: $value")
+
+                            val tagVal = hashMapOf(
+                                "value" to value
+                            )
+                            val nullVal = hashMapOf(
+                                "value" to null
+                            )
+
+                            if (value == "") {
+                                firestoreDb.collection("tags").document(userId as String)
+                                    .collection(postCreationTask.id).document(tag).set(nullVal)
+                            } else {
+                                firestoreDb.collection("tags").document(userId as String)
+                                    .collection(postCreationTask.id).document(tag).set(tagVal)
+                            }
                         }
                     }
+
+                    binding.btnSubmit.isEnabled = true
+                    binding.etDescription.text.clear()
+                    binding.imageView.setImageResource(0)
+                    binding.videoView.setVideoURI(null)
+                    binding.imageView.isVisible = true
+                    binding.videoView.isVisible = false
+                    Toast.makeText(this, "Post uploaded!", Toast.LENGTH_SHORT).show()
+                    val profileIntent = Intent(this, ProfileActivity::class.java)
+                    profileIntent.putExtra(EXTRA_USERNAME, signedInUser?.username)
+                    startActivity(profileIntent)
+                    finish()
+
+                }.addOnFailureListener { error ->
+                    Log.e(TAG, "Exception during Firebase operations", error)
+                    Toast.makeText(this, "Failed to save post...", Toast.LENGTH_SHORT).show()
                 }
 
-                binding.btnSubmit.isEnabled = true
-                binding.etDescription.text.clear()
-                binding.imageView.setImageResource(0)
-                binding.videoView.setVideoURI(null)
-                binding.imageView.isVisible = true
-                binding.videoView.isVisible = false
-                Toast.makeText(this, "File uploaded!", Toast.LENGTH_SHORT).show()
-                val profileIntent = Intent(this, ProfileActivity::class.java)
-                profileIntent.putExtra(EXTRA_USERNAME, signedInUser?.username)
-                startActivity(profileIntent)
-                finish()
-            }.addOnFailureListener { error ->
-                Log.e(TAG, "Exception during Firebase operations", error)
-                Toast.makeText(this, "Failed to save post...", Toast.LENGTH_SHORT).show()
+        } else {
+            binding.btnSubmit.isEnabled = false
+            if (binding.rgbVideo.isChecked) {
+                fileUploadUri = videoUri as Uri
+                fileType = "video"
+                //fileReference = storageReference.child("videos/${System.currentTimeMillis()}-video.mp4")
+                fileReference = storageReference.child("videos/${creationTime}-video.mp4")
+            } else if (binding.rgbImage.isChecked) {
+                fileUploadUri = imageUri as Uri
+                fileReference = storageReference.child("images/${creationTime}-photo.jpg")
+                fileType = "image"
+            } else if (binding.rgbAudio.isChecked) {
+                fileUploadUri = imageUri as Uri
+                fileReference = storageReference.child("audio/${creationTime}-audio.mp3")
+                fileType = "audio"
             }
+
+            // Upload file to Firebase Storage
+            fileReference.putFile(fileUploadUri)
+                .continueWithTask { fileUploadTask ->
+                    Log.i(TAG, "uploaded bytes: ${fileUploadTask.result?.bytesTransferred}")
+                    // Retrieve url of uploaded file to Firestore
+                    fileReference.downloadUrl
+                }.continueWithTask { downloadUrlTask ->
+                    // Create a post object with the file url and add it to artifacts collection
+                    val post = creationTime?.let {
+                        Post(
+                            it,
+                            desc!!,
+                            fileType.toString(),
+                            0,
+                            downloadUrlTask.result.toString(),
+                            location,
+                            userId,
+                            signedInUser?.username)
+                    }
+                    post?.let { firestoreDb.collection("artifacts").add(it) }!!
+                }.addOnSuccessListener { postCreationTask ->
+                    var link = Link(
+                        "owned",
+                        "$userId"
+                    )
+                    firestoreDb.collection("links").document(postCreationTask.id)
+                        .collection("owned").document(userId as String).set(link)
+                    firestoreDb.collection("links").document(userId as String)
+                        .collection("owned").document(postCreationTask.id).set(link)
+                    if (binding.etDescription.text.isNotBlank() && binding.etDescription.text.contains("#")) {
+                        var tagList : Array<String> = desc!!.split(" ").toTypedArray()
+
+                        for (item in tagList) {
+                            var tag = item
+                            var value = ""
+                            if (item.contains("=")) {
+                                tag = item.split("=").toTypedArray()[0]
+                                value = item.split("=").toTypedArray()[1]
+                            }
+                            Log.i(TAG, "Tag: $tag, Value: $value")
+
+                            val tagVal = hashMapOf(
+                                "value" to value
+                            )
+                            val nullVal = hashMapOf(
+                                "value" to null
+                            )
+
+                            if (value == "") {
+                                firestoreDb.collection("tags").document(userId as String)
+                                    .collection(postCreationTask.id).document(tag).set(nullVal)
+                            } else {
+                                firestoreDb.collection("tags").document(userId as String)
+                                    .collection(postCreationTask.id).document(tag).set(tagVal)
+                            }
+                        }
+                    }
+
+                    binding.btnSubmit.isEnabled = true
+                    binding.etDescription.text.clear()
+                    binding.imageView.setImageResource(0)
+                    binding.videoView.setVideoURI(null)
+                    binding.imageView.isVisible = true
+                    binding.videoView.isVisible = false
+                    Toast.makeText(this, "Post uploaded!", Toast.LENGTH_SHORT).show()
+                    val profileIntent = Intent(this, ProfileActivity::class.java)
+                    profileIntent.putExtra(EXTRA_USERNAME, signedInUser?.username)
+                    startActivity(profileIntent)
+                    finish()
+                }.addOnFailureListener { error ->
+                    Log.e(TAG, "Exception during Firebase operations", error)
+                    Toast.makeText(this, "Failed to save post...", Toast.LENGTH_SHORT).show()
+                }
+        }
     }
 }

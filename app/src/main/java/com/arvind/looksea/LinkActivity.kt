@@ -106,32 +106,52 @@ class LinkActivity : AppCompatActivity() {
     }
 
     private fun handleSubmitButtonClick() {
-        if (binding.etLinkName.text.isBlank() || binding.etLinkedItem.text.isBlank()) {
-            Toast.makeText(this, "Missing link name/linked item...", Toast.LENGTH_SHORT).show()
-            return
-        }
-
         binding.btnSubmit.isEnabled = false
-        var postId = intent.getStringExtra(EXTRA_ARTIFACTID)
-        var linkName = binding.etLinkName.text.toString()
+        var artifactId = intent.getStringExtra(EXTRA_ARTIFACTID)
         var searchId = binding.etLinkedItem.text.toString()
+        var linkName = binding.etLinkName.text.toString()
+        var linkCollName = "linked"
+        if (searchId.length == 28 || artifactId!!.length == 28) {
+            linkCollName = "liked"
+        }
+        if (binding.etLinkName.text.isBlank() || binding.etLinkedItem.text.isBlank()) {
+            Toast.makeText(this, "Using default link names.", Toast.LENGTH_SHORT).show()
+            linkName = "default"
+            Log.i(TAG, "${searchId.length}, ${artifactId!!.length}")
+            if (searchId.length == 28 || artifactId!!.length == 28) {
+                linkName = "liked"
+            }
+        }
         var linkVal = Link(
             linkName,
             "$userId"
         )
 
-        firestoreDb.collection("links").document(postId as String)
-            .collection("link").document(searchId).set(linkVal)
+        firestoreDb.collection("links").document(artifactId as String)
+            .collection("$linkCollName").document(searchId).set(linkVal)
             .addOnCompleteListener {
-                postId = searchId
+                artifactId = searchId
                 searchId = intent.getStringExtra(EXTRA_ARTIFACTID).toString()
                 var linkVal = Link(
                     linkName,
                     "$userId"
                 )
-                firestoreDb.collection("links").document(postId as String)
-                    .collection("link").document(searchId).set(linkVal)
+                firestoreDb.collection("links").document(artifactId as String)
+                    .collection("$linkCollName").document(searchId).set(linkVal)
                     .addOnCompleteListener { linkCreationTask ->
+                        if (artifactId!!.length == 28) {
+                            firestoreDb.collection("artifacts").document(searchId).get()
+                                .addOnSuccessListener { postSnapshot ->
+                                    var post = postSnapshot.toObject(Post::class.java)
+                                    firestoreDb.collection("artifacts").document(searchId).update("likes", post!!.likes+1)
+                                }
+                        } else if (searchId.length == 28) {
+                            firestoreDb.collection("artifacts").document(artifactId!!).get()
+                                .addOnSuccessListener { postSnapshot ->
+                                    var post = postSnapshot.toObject(Post::class.java)
+                                    firestoreDb.collection("artifacts").document(artifactId!!).update("likes", post!!.likes+1)
+                                }
+                        }
                         binding.btnSubmit.isEnabled = true
                         if (!linkCreationTask.isSuccessful) {
                             Log.e(TAG, "Exception during Firebase operations", linkCreationTask.exception)
