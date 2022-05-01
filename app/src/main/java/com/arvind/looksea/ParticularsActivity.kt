@@ -109,8 +109,8 @@ class ParticularsActivity : AppCompatActivity() {
                     Log.i(TAG, "Failed to fetch signed-in user", exception)
                 }
                 .addOnCompleteListener {
-                    if (imageUri == null && signedInUser?.picture != "") {
-                        Glide.with(this).load(signedInUser?.picture).into(binding.profilePic)
+                    if (imageUri == null && signedInUser?.file_url != "") {
+                        Glide.with(this).load(signedInUser?.file_url).into(binding.profilePic)
                     } else {
                         Glide.with(this).load("https://firebasestorage.googleapis.com/v0/b/looksea-43f7d.appspot.com/o/profilepics%2Fdefault_icon.png?alt=media&token=7e6d6755-726d-4f02-ae75-f74cda6dd748").into(binding.profilePic)
                     }
@@ -169,7 +169,7 @@ class ParticularsActivity : AppCompatActivity() {
                 override fun onLoadCleared(placeholder: Drawable?) {}
             })
         } else {
-            Glide.with(this).asBitmap().load(signedInUser?.picture).into(object : CustomTarget<Bitmap?>() {
+            Glide.with(this).asBitmap().load(signedInUser?.file_url).into(object : CustomTarget<Bitmap?>() {
                 override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap?>?) {
                     val image = InputImage.fromBitmap(resource, 0)
                     val labeler = ImageLabeling.getClient(ImageLabelerOptions.DEFAULT_OPTIONS)
@@ -300,7 +300,7 @@ class ParticularsActivity : AppCompatActivity() {
                     }
             }
         } else {
-            newUrl = signedInUser?.picture.toString()
+            newUrl = signedInUser?.file_url.toString()
             val user = User(
                 newUsername,
                 newDesc,

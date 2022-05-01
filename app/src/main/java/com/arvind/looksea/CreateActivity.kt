@@ -192,6 +192,8 @@ class CreateActivity : AppCompatActivity() {
         binding.rgbText.setOnClickListener {
             binding.btnChooseFile.isVisible = false
             binding.btnCaptureNow.isVisible = false
+            binding.btnSuggest.isVisible = false
+            binding.etDescription.hint = "What is on your mind?"
 
             fetchLocation()
 
@@ -200,7 +202,8 @@ class CreateActivity : AppCompatActivity() {
         binding.rgbSurvey.setOnClickListener {
             binding.btnChooseFile.isVisible = false
             binding.btnCaptureNow.isVisible = false
-
+            binding.btnSuggest.isVisible = false
+            binding.etDescription.hint = "Set-up survey here..."
             fetchLocation()
 
         }

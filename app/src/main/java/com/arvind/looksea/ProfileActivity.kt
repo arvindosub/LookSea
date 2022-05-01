@@ -172,8 +172,8 @@ class ProfileActivity : AppCompatActivity() {
                             currUserId = doc.id
                         }
                         binding.profileDescription.text = currUser?.description
-                        if (currUser?.picture != "") {
-                            Glide.with(applicationContext).load(currUser?.picture).into(binding.profilePicture)
+                        if (currUser?.file_url != "") {
+                            Glide.with(applicationContext).load(currUser?.file_url).into(binding.profilePicture)
                         } else {
                             Glide.with(applicationContext).load("https://firebasestorage.googleapis.com/v0/b/looksea-43f7d.appspot.com/o/profilepics%2Fdefault_icon.png?alt=media&token=7e6d6755-726d-4f02-ae75-f74cda6dd748").into(binding.profilePicture)
                         }

@@ -12,7 +12,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import androidx.core.widget.addTextChangedListener
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.arvind.looksea.databinding.ActivitySearchBinding
-import com.arvind.looksea.models.Post
+import com.arvind.looksea.models.Item
+import com.google.firebase.firestore.FieldPath
 
 private const val TAG = "SearchActivity"
 
@@ -21,19 +22,19 @@ class SearchActivity : AppCompatActivity() {
     private var signedInUser: User? = null
     private lateinit var firestoreDb: FirebaseFirestore
     private lateinit var binding: ActivitySearchBinding
-
-    private lateinit var search: MutableList<Post>
-    private lateinit var adapterSearch: PostAdapter
-    private lateinit var searchList: MutableList<Post>
+    private lateinit var search: MutableList<Item>
+    private lateinit var adapterSearch: ItemAdapter
+    private lateinit var searchList: MutableList<Item>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivitySearchBinding.inflate(layoutInflater)
         setContentView(binding.root)
         search = mutableListOf()
-        adapterSearch = PostAdapter(this, search)
+        adapterSearch = ItemAdapter(this, search)
         binding.rvSearch.adapter = adapterSearch
         binding.rvSearch.layoutManager = LinearLayoutManager(this)
+        var userId = FirebaseAuth.getInstance().currentUser?.uid as String
 
         firestoreDb = FirebaseFirestore.getInstance()
         firestoreDb.collection("artifacts")
@@ -45,29 +46,81 @@ class SearchActivity : AppCompatActivity() {
 
                 binding.etSearch.addTextChangedListener {
                     if (it.toString() == "") {
+                        searchList.clear()
                         search.clear()
                         adapterSearch.notifyDataSetChanged()
-                    } else {
+                    } else if (it.toString().contains("/friendswith ")) {
+                        searchList.clear()
+                        var searchTerm = it.toString().split(' ')[1]
                         firestoreDb.collection("artifacts")
-                            .whereIn("type", mutableListOf("image", "video", "audio"))
-                            .whereGreaterThanOrEqualTo("description", "#"+it.toString())
+                            .whereEqualTo("type", "user")
+                            .whereEqualTo("username", searchTerm)
+                            .get()
+                            .addOnSuccessListener { userSnapshots ->
+                                var searchUser = ""
+                                userSnapshots.forEach { doc ->
+                                    searchUser = doc.id
+                                }
+
+                                if (searchUser != "") {
+                                    firestoreDb.collection("links")
+                                        .document(searchUser)
+                                        .collection("friend")
+                                        .get()
+                                        .addOnSuccessListener { querySnapshots ->
+                                            var idList = mutableListOf<String>()
+                                            querySnapshots.forEach { doc ->
+                                                idList.add(doc.id)
+                                            }
+                                            firestoreDb.collection("artifacts")
+                                                .whereIn(FieldPath.documentId(), idList)
+                                                .get()
+                                                .addOnSuccessListener { friendSnapshots ->
+                                                    searchList = friendSnapshots.toObjects((Item::class.java))
+                                                    search.clear()
+                                                    search.addAll(searchList)
+                                                    adapterSearch.notifyDataSetChanged()
+                                                    Log.i(TAG, "zz $searchList")
+                                                }
+
+                                        }
+                                }
+                            }
+                    }
+                    else {
+                        firestoreDb.collection("artifacts")
+                            .whereIn("type", mutableListOf("image", "video", "audio", "text", "survey", "user"))
+                            .whereGreaterThanOrEqualTo("description", "#" + it.toString())
                             .get()
                             .addOnSuccessListener { querySnapshots ->
-                                searchList = querySnapshots.toObjects((Post::class.java))
-                                Log.i(TAG, "$searchList")
+                                searchList = querySnapshots.toObjects((Item::class.java))
                                 search.clear()
                                 search.addAll(searchList)
-                                adapterSearch.notifyDataSetChanged()
+                                firestoreDb.collection("artifacts")
+                                    .whereGreaterThanOrEqualTo("username", it.toString())
+                                    .get()
+                                    .addOnSuccessListener { query2Snapshots ->
+                                        searchList = query2Snapshots.toObjects((Item::class.java))
+                                        search.addAll(searchList)
+                                        adapterSearch.notifyDataSetChanged()
+                                        Log.i(TAG, "zz $searchList")
+                                    }
                             }
                     }
                 }
-                adapterSearch.setOnItemClickListener(object : PostAdapter.onItemClickListener {
+                adapterSearch.setOnItemClickListener(object : ItemAdapter.onItemClickListener {
                     override fun onItemClick(position: Int) {
-                        val post= searchList[position]
-                        Log.i(TAG, "$post")
-                        val intent = Intent(this@SearchActivity, PostActivity::class.java)
-                        intent.putExtra(EXTRA_POSTTIME, post.creationTimeMs.toString())
-                        startActivity(intent)
+                        val item = searchList[position]
+                        Log.i(TAG, "$item")
+                        if (item.type == "user") {
+                            val intent = Intent(this@SearchActivity, ProfileActivity::class.java)
+                            intent.putExtra(EXTRA_USERNAME, item.username)
+                            startActivity(intent)
+                        } else {
+                            val intent = Intent(this@SearchActivity, PostActivity::class.java)
+                            intent.putExtra(EXTRA_POSTTIME, item.creationTimeMs.toString())
+                            startActivity(intent)
+                        }
                     }
                 })
 

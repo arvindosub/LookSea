@@ -35,7 +35,7 @@ class UserAdapter (val context: Context, private val users: List<User>) : Recycl
 
     inner class ViewHolder(itemView: View, listener: onItemClickListener) : RecyclerView.ViewHolder(itemView) {
         fun bind(user: User) {
-            Glide.with(context).load(user.picture).into(itemView.findViewById<ImageView>(R.id.ivProfileImage))
+            Glide.with(context).load(user.file_url).into(itemView.findViewById<ImageView>(R.id.ivProfileImage))
             itemView.findViewById<TextView>(R.id.tvUsername).text = user.username
         }
         init {
