@@ -20,23 +20,26 @@
 
             <ImageView
                 android:id="@+id/ivProfileImage"
-                android:layout_width="35dp"
+                android:layout_width="30dp"
                 android:clickable="true"
-                android:layout_height="35dp" />
+                android:layout_height="30dp" />
 
             <TextView
                 android:id="@+id/tvUsername"
-                android:layout_width="275dp"
+                android:layout_width="200dp"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="8dp"
+                android:layout_marginLeft="5dp"
+                android:layout_gravity="center"
                 android:clickable="true"
                 android:textAppearance="@style/TextAppearance.AppCompat.Large"
+                android:textSize="16dp"
                 tools:text="username" />
 
             <ImageButton
                 android:id="@+id/btnLike"
                 android:layout_width="20dp"
                 android:layout_height="20dp"
+                android:layout_marginLeft="75dp"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_like" />
 
@@ -47,6 +50,7 @@
                 android:textAppearance="@style/TextAppearance.AppCompat.Large"
                 tools:text="xxxx"
                 android:layout_marginLeft="5dp"
+                android:layout_gravity="center"
                 android:textSize="16dp" />
 
         </LinearLayout>
@@ -64,31 +68,85 @@
 
             <ImageView
                 android:id="@+id/ivPost"
-                android:layout_width="match_parent"
-                android:layout_height="300dp"
-                android:layout_marginTop="5dp"
+                android:layout_width="150dp"
+                android:layout_height="150dp"
                 android:scaleType="centerCrop"
                 android:visibility="visible"
                 tools:ignore="ImageContrastCheck"
+                android:layout_marginTop="5dp"
                 tools:srcCompat="@tools:sample/avatars" />
 
             <VideoView
                 android:id="@+id/vvPost"
-                android:layout_width="188dp"
-                android:layout_height="300dp"
-                android:layout_marginLeft="96dp"
-                android:layout_marginTop="5dp"
+                android:layout_width="150dp"
+                android:layout_height="150dp"
                 android:scaleType="centerCrop"
-                tools:ignore="ImageContrastCheck"
-                android:visibility="invisible" />
+                android:layout_marginTop="5dp"
+                android:visibility="invisible"
+                tools:ignore="ImageContrastCheck" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:layout_marginTop="5dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvDescription"
+                    android:layout_width="match_parent"
+                    android:layout_height="150dp"
+                    android:layout_marginLeft="155dp"
+                    android:textSize="14dp"
+                    tools:text="sample description..." />
+
+            </LinearLayout>
 
         </FrameLayout>
 
-        <TextView
-            android:id="@+id/tvDescription"
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            tools:text="sample description..." />
+            android:layout_height="100dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:orientation="vertical">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvComments"
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    android:clickable="true" />
+
+            </LinearLayout>
+
+        </ScrollView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/etComment"
+                android:layout_width="300dp"
+                android:layout_height="50dp"
+                android:enabled="true"
+                android:textColorHint="@color/black"
+                android:hint="Write a comment..."
+                android:textSize="12dp"
+                android:maxLines="5" />
+
+            <Button
+                android:id="@+id/btnComment"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:clickable="true"
+                android:text="> >"
+                android:layout_gravity="bottom"
+                android:textSize="10dp" />
+
+        </LinearLayout>
+
     </LinearLayout>
 </androidx.cardview.widget.CardView>

@@ -7,7 +7,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.core.view.isVisible
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.arvind.looksea.models.Link
 import com.arvind.looksea.models.Post
 import com.arvind.looksea.models.User
 import com.bumptech.glide.Glide
@@ -63,6 +65,7 @@ class PostAdapter (val context: Context, private val posts: List<Post>) : Recycl
     inner class ViewHolder(itemView: View, postListener: onItemClickListener, likeListener: onLikeClickListener, userListener: onUserClickListener) : RecyclerView.ViewHolder(itemView) {
         private var toggleLike : ImageButton = itemView.findViewById<ImageButton>(R.id.btnLike)
         fun bind(post: Post) {
+
             val username = post.username as String
             itemView.findViewById<TextView>(R.id.tvUsername).text = post.username
             itemView.findViewById<TextView>(R.id.tvDescription).text = post.description

@@ -2,16 +2,11 @@ package com.arvind.looksea
 
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.os.FileUtils
-import android.text.Editable
 import android.util.Log
 import android.widget.Toast
-import androidx.core.content.FileProvider
-import androidx.core.net.toUri
 import com.arvind.looksea.models.Post
 import com.arvind.looksea.models.User
 import com.google.firebase.auth.FirebaseAuth
@@ -19,19 +14,16 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 import androidx.core.view.isVisible
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.arvind.looksea.databinding.ActivityPostBinding
 import com.arvind.looksea.models.Link
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.google.firebase.firestore.GeoPoint
-import com.google.firebase.firestore.ktx.toObject
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.label.ImageLabeling
 import com.google.mlkit.vision.label.defaults.ImageLabelerOptions
-import org.json.JSONObject
-import java.io.File
-import java.nio.file.Paths
 
 private const val TAG = "PostActivity"
 
@@ -43,6 +35,9 @@ class PostActivity : AppCompatActivity() {
     private lateinit var firestoreDb: FirebaseFirestore
     private lateinit var binding: ActivityPostBinding
     private lateinit var storageReference: StorageReference
+    private lateinit var comments: MutableList<Link>
+    private lateinit var adapter: CommentAdapter
+    private var commentList = mutableListOf<Link>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,6 +47,11 @@ class PostActivity : AppCompatActivity() {
 
         storageReference = FirebaseStorage.getInstance().reference
         userId = FirebaseAuth.getInstance().currentUser?.uid as String
+
+        comments = mutableListOf()
+        adapter = CommentAdapter(this, comments)
+        binding.rvComments.adapter = adapter
+        binding.rvComments.layoutManager = LinearLayoutManager(this)
 
         firestoreDb = FirebaseFirestore.getInstance()
         firestoreDb.collection("artifacts")
@@ -69,45 +69,118 @@ class PostActivity : AppCompatActivity() {
                             postId = doc.id
                             post = doc.toObject(Post::class.java)
                         }
-                        // post = response.toObjects(Post::class.java)[0]
-                        binding.imageView.isVisible = true
-                        binding.videoView.isVisible = false
 
-                        Log.i(TAG, "$post")
+                        firestoreDb.collection("links")
+                            .document(postId!!)
+                            .collection("commented")
+                            .get()
+                            .addOnSuccessListener { commentSnapshots ->
+                                commentList = commentSnapshots.toObjects(Link::class.java)
 
-                        Glide.with(this).load(post?.fileUrl).into(binding.imageView)
-                        binding.etDescription.hint = post?.description.toString()
-                        binding.tvLikes.text = post?.likes.toString()
-                        if (userId == post?.userId) {
-                            binding.etDescription.isEnabled = true
-                            binding.etDescription.setText(post?.description)
-                            binding.btnSubmit.isVisible = true
-                            binding.btnDelete.isVisible = true
-                            binding.btnAnalyse.text = "Suggest"
-                            binding.btnSubmit.setOnClickListener {
-                                handleSubmitButtonClick()
+                                comments.clear()
+                                comments.addAll(commentList)
+                                adapter.notifyDataSetChanged()
+
+                                // post = response.toObjects(Post::class.java)[0]
+                                binding.imageView.isVisible = true
+                                binding.videoView.isVisible = false
+
+                                Log.i(TAG, "$post")
+
+                                Glide.with(this).load(post?.fileUrl).into(binding.imageView)
+                                binding.etDescription.hint = post?.description.toString()
+                                binding.tvLikes.text = post?.likes.toString()
+
+                                if (userId == post?.userId) {
+                                    binding.etDescription.isEnabled = true
+                                    binding.etDescription.setText(post?.description)
+                                    binding.btnSubmit.isVisible = true
+                                    binding.btnDelete.isVisible = true
+                                    binding.btnAnalyse.text = "Suggest"
+                                    binding.btnSubmit.setOnClickListener {
+                                        handleSubmitButtonClick()
+                                    }
+                                    binding.btnDelete.setOnClickListener {
+                                        deletePost()
+                                    }
+                                }
+
+                                binding.btnComment.setOnClickListener {
+                                    uploadComment()
+                                }
+
+                                binding.btnAnalyse.setOnClickListener {
+                                    handleAnalysis()
+                                }
+
+                                binding.btnLike.setOnClickListener {
+                                    likePost()
+                                }
+
+                                binding.fabLink.setOnClickListener {
+                                    handleLinkButtonClick()
+                                }
+
                             }
-                            binding.btnDelete.setOnClickListener {
-                                deletePost()
-                            }
-                        }
-
-                        binding.btnAnalyse.setOnClickListener {
-                            handleAnalysis()
-                        }
-
-                        binding.btnLike.setOnClickListener {
-                            likePost()
-                        }
-
-                        binding.fabLink.setOnClickListener {
-                            handleLinkButtonClick()
-                        }
-
                     }
+
+                adapter.setOnUserClickListener(object : CommentAdapter.onUserClickListener {
+                    override fun onUserClick(position: Int) {
+                        val thisUser = commentList[position].owner
+                        firestoreDb.collection("artifacts")
+                            .document(thisUser)
+                            .get()
+                            .addOnSuccessListener { doc ->
+                                var myUser = doc.toObject(User::class.java)
+                                val intent = Intent(this@PostActivity, ProfileActivity::class.java)
+                                intent.putExtra(EXTRA_USERNAME, myUser!!.username)
+                                startActivity(intent)
+                            }
+                    }
+                })
+
+                adapter.setOnCommentClickListener(object : CommentAdapter.onCommentClickListener {
+                    override fun onCommentClick(position: Int) {
+                        val thisUser = commentList[position].owner
+                        firestoreDb.collection("artifacts")
+                            .document(thisUser)
+                            .get()
+                            .addOnSuccessListener { doc ->
+                                var myUser = doc.toObject(User::class.java)
+                                val intent = Intent(this@PostActivity, ProfileActivity::class.java)
+                                intent.putExtra(EXTRA_USERNAME, myUser!!.username)
+                                startActivity(intent)
+                            }
+                    }
+                })
             }
             .addOnFailureListener { exception ->
                 Log.i(TAG, "Failed to fetch signed-in user", exception)
+            }
+    }
+
+    private fun uploadComment() {
+        binding.btnSubmit.isEnabled = false
+
+        var linkVal = Link(
+            "${binding.etComment.text}",
+            "$userId"
+        )
+
+        firestoreDb.collection("links").document(userId!!)
+            .collection("commented").document(postId!!).set(linkVal)
+            .addOnCompleteListener {
+                firestoreDb.collection("links").document(postId!!)
+                    .collection("commented").document(userId!!).set(linkVal)
+                    .addOnCompleteListener { linkCreationTask ->
+                        binding.btnSubmit.isEnabled = true
+                        if (!linkCreationTask.isSuccessful) {
+                            Log.e(TAG, "Exception during Firebase operations", linkCreationTask.exception)
+                            Toast.makeText(this, "Failed to add comment...", Toast.LENGTH_SHORT).show()
+                        }
+                        Toast.makeText(this, "Comment Added!", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
             }
     }
 
