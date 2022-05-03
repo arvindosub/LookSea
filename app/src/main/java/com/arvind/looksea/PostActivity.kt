@@ -7,6 +7,7 @@ import android.graphics.drawable.Drawable
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.FileUtils
+import android.text.Editable
 import android.util.Log
 import android.widget.Toast
 import androidx.core.content.FileProvider
@@ -79,6 +80,7 @@ class PostActivity : AppCompatActivity() {
                         binding.tvLikes.text = post?.likes.toString()
                         if (userId == post?.userId) {
                             binding.etDescription.isEnabled = true
+                            binding.etDescription.setText(post?.description)
                             binding.btnSubmit.isVisible = true
                             binding.btnDelete.isVisible = true
                             binding.btnAnalyse.text = "Suggest"

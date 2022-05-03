@@ -6,8 +6,10 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.arvind.looksea.databinding.ActivityHomeBinding
+import com.arvind.looksea.models.Link
 import com.arvind.looksea.models.Post
 import com.arvind.looksea.models.User
 import com.google.firebase.auth.FirebaseAuth
@@ -27,6 +29,7 @@ open class HomeActivity : AppCompatActivity() {
     private var currUserId: String? = ""
     private lateinit var firestoreDb: FirebaseFirestore
     private lateinit var posts: MutableList<Post>
+    private lateinit var postIds: MutableList<String>
     private lateinit var adapter: PostAdapter
     private lateinit var binding: ActivityHomeBinding
 
@@ -37,6 +40,7 @@ open class HomeActivity : AppCompatActivity() {
         // Create the layout file which represents one post - DONE
         // Create data source - DONE
         posts = mutableListOf()
+        postIds = mutableListOf()
         // Create the adapter
         adapter = PostAdapter(this, posts)
         // Bind the adapter and layout manager to the RV
@@ -68,12 +72,15 @@ open class HomeActivity : AppCompatActivity() {
                             return@addSnapshotListener
                         }
                         val postList = snapshot.toObjects(Post::class.java)
+                        var postIdList = mutableListOf<String>()
+                        snapshot.forEach { doc ->
+                            postIdList.add(doc.id)
+                        }
                         posts.clear()
                         posts.addAll(postList)
+                        postIds.clear()
+                        postIds.addAll(postIdList)
                         adapter.notifyDataSetChanged()
-                        for (post in postList) {
-                            Log.i(TAG, "Post $post")
-                        }
                     }
 
                 } else {
@@ -98,21 +105,42 @@ open class HomeActivity : AppCompatActivity() {
                                     return@addSnapshotListener
                                 }
                                 val postList = snapshot.toObjects(Post::class.java)
+                                var postIdList = mutableListOf<String>()
+                                snapshot.forEach { doc ->
+                                    postIdList.add(doc.id)
+                                }
                                 posts.clear()
                                 posts.addAll(postList)
+                                postIds.clear()
+                                postIds.addAll(postIdList)
                                 adapter.notifyDataSetChanged()
-                                for (post in postList) {
-                                    Log.i(TAG, "Post $post")
-                                }
                             }
                         }
                 }
+
                 adapter.setOnItemClickListener(object : PostAdapter.onItemClickListener {
                     override fun onItemClick(position: Int) {
                         val clickedPost = posts[position]
                         Log.i(TAG, "$clickedPost")
                         val intent = Intent(this@HomeActivity, PostActivity::class.java)
                         intent.putExtra(EXTRA_POSTTIME, clickedPost.creationTimeMs.toString())
+                        startActivity(intent)
+                    }
+                })
+
+                adapter.setOnLikeClickListener(object : PostAdapter.onLikeClickListener {
+                    override fun onLikeClick(position: Int) {
+                        val likedPost = posts[position]
+                        val likedPostId = postIds[position]
+                        likePost(likedPost, likedPostId)
+                    }
+                })
+
+                adapter.setOnUserClickListener(object : PostAdapter.onUserClickListener {
+                    override fun onUserClick(position: Int) {
+                        val thisUser = posts[position].username
+                        val intent = Intent(this@HomeActivity, ProfileActivity::class.java)
+                        intent.putExtra(EXTRA_USERNAME, thisUser)
                         startActivity(intent)
                     }
                 })
@@ -126,6 +154,56 @@ open class HomeActivity : AppCompatActivity() {
             val intent = Intent(this, CreateActivity::class.java)
             startActivity(intent)
         }
+    }
+
+    private fun likePost(post: Post, postId: String) {
+        val likes = post?.likes!!
+        postId?.let {
+            var isLiked = true
+            firestoreDb.collection("links").document(userId as String)
+                .collection("liked").document(postId as String)
+                .get()
+                .addOnSuccessListener { likeSnapshot ->
+                    Log.i(TAG, "Liked? ${likeSnapshot}")
+                    if (likeSnapshot.data == null) {
+                        isLiked = false
+                    }
+                    Log.i(TAG, "isLiked? ${isLiked}")
+
+                    if (!isLiked) {
+                        firestoreDb.collection("artifacts").document(postId!!)
+                            .update("likes", likes+1)
+                            .addOnCompleteListener {
+                                Log.i(TAG, "Likes ${likes+1}")
+                                Toast.makeText(this, "Liked", Toast.LENGTH_SHORT).show()
+                                var link = Link(
+                                    "liked",
+                                    "$userId"
+                                )
+                                firestoreDb.collection("links").document(userId as String)
+                                    .collection("liked").document(postId as String).set(link)
+                                    .addOnCompleteListener {
+                                        firestoreDb.collection("links").document(postId as String)
+                                            .collection("liked").document(userId as String).set(link)
+                                    }
+                            }
+                    } else {
+                        firestoreDb.collection("artifacts").document(postId!!)
+                            .update("likes", likes-1)
+                            .addOnCompleteListener {
+                                Log.i(TAG, "Likes ${likes-1}")
+                                Toast.makeText(this, "Unliked", Toast.LENGTH_SHORT).show()
+                                firestoreDb.collection("links").document(userId as String)
+                                    .collection("liked").document(postId as String).delete()
+                                    .addOnCompleteListener {
+                                        firestoreDb.collection("links").document(postId as String)
+                                            .collection("liked").document(userId as String).delete()
+                                    }
+                            }
+                    }
+                }
+        }
+        //this.recreate()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

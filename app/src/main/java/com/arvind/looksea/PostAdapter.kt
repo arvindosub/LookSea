@@ -9,7 +9,9 @@ import android.widget.*
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.arvind.looksea.models.Post
+import com.arvind.looksea.models.User
 import com.bumptech.glide.Glide
+import com.google.firebase.firestore.FirebaseFirestore
 import java.math.BigInteger
 import java.security.MessageDigest
 
@@ -19,18 +21,37 @@ class PostAdapter (val context: Context, private val posts: List<Post>) : Recycl
     //private var myVideo: VideoView? = null
 
     private lateinit var pListener : onItemClickListener
+    private lateinit var lListener : onLikeClickListener
+    private lateinit var uListener : onUserClickListener
+    private lateinit var firestoreDb: FirebaseFirestore
 
     interface onItemClickListener {
         fun onItemClick(position : Int)
     }
 
-    fun setOnItemClickListener(listener: onItemClickListener) {
-        pListener = listener
+    fun setOnItemClickListener(postListener: onItemClickListener) {
+        pListener = postListener
+    }
+
+    interface onLikeClickListener {
+        fun onLikeClick(position : Int)
+    }
+
+    fun setOnLikeClickListener(likeListener: onLikeClickListener) {
+        lListener = likeListener
+    }
+
+    interface onUserClickListener {
+        fun onUserClick(position : Int)
+    }
+
+    fun setOnUserClickListener(userListener: onUserClickListener) {
+        uListener = userListener
     }
 
     override fun onCreateViewHolder(viewGroup: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(viewGroup.context).inflate(R.layout.item_post, viewGroup, false)
-        return ViewHolder(view, pListener)
+        return ViewHolder(view, pListener, lListener, uListener)
     }
 
     override fun getItemCount() = posts.size
@@ -39,7 +60,8 @@ class PostAdapter (val context: Context, private val posts: List<Post>) : Recycl
         holder.bind(posts[position])
     }
 
-    inner class ViewHolder(itemView: View, listener: onItemClickListener) : RecyclerView.ViewHolder(itemView) {
+    inner class ViewHolder(itemView: View, postListener: onItemClickListener, likeListener: onLikeClickListener, userListener: onUserClickListener) : RecyclerView.ViewHolder(itemView) {
+        private var toggleLike : ImageButton = itemView.findViewById<ImageButton>(R.id.btnLike)
         fun bind(post: Post) {
             val username = post.username as String
             itemView.findViewById<TextView>(R.id.tvUsername).text = post.username
@@ -72,13 +94,48 @@ class PostAdapter (val context: Context, private val posts: List<Post>) : Recycl
                 itemView.findViewById<View>(R.id.ivPost).isVisible = true
                 Glide.with(context).load(post.fileUrl).into(itemView.findViewById<ImageView>(R.id.ivPost))
             }
-            Glide.with(context).load(getProfileImageUrl(username)).into(itemView.findViewById<ImageView>(R.id.ivProfileImage))
+
             itemView.findViewById<TextView>(R.id.tvRelativeTime).text = DateUtils.getRelativeTimeSpanString(post.creationTimeMs)
             itemView.findViewById<TextView>(R.id.tvLikes).text = post.likes.toString()
+
+            var userId = ""
+            firestoreDb = FirebaseFirestore.getInstance()
+            firestoreDb.collection("artifacts")
+                .whereEqualTo("type", "user")
+                .whereEqualTo("username", post.username)
+                .get()
+                .addOnSuccessListener { snapshots ->
+                    snapshots.forEach { doc ->
+                        userId = doc.id
+                    }
+                    firestoreDb.collection("artifacts")
+                        .document(userId)
+                        .get()
+                        .addOnSuccessListener { userSnapshot ->
+                            var user = userSnapshot.toObject((User::class.java))
+                            if (user?.file_url.toString() == "") {
+                                Glide.with(context).load(getProfileImageUrl(username)).into(itemView.findViewById<ImageView>(R.id.ivProfileImage))
+                            } else {
+                                Glide.with(context).load(user?.file_url.toString()).into(itemView.findViewById<ImageView>(R.id.ivProfileImage))
+                            }
+                        }
+                }
         }
         init {
             itemView.setOnClickListener {
-                listener.onItemClick(bindingAdapterPosition)
+                postListener.onItemClick(bindingAdapterPosition)
+            }
+
+            itemView.findViewById<ImageButton>(R.id.btnLike).setOnClickListener {
+                likeListener.onLikeClick(bindingAdapterPosition)
+            }
+
+            itemView.findViewById<ImageView>(R.id.ivProfileImage).setOnClickListener {
+                userListener.onUserClick(bindingAdapterPosition)
+            }
+
+            itemView.findViewById<TextView>(R.id.tvUsername).setOnClickListener {
+                userListener.onUserClick(bindingAdapterPosition)
             }
         }
 

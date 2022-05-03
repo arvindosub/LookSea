@@ -50,6 +50,7 @@ class ParticularsActivity : AppCompatActivity() {
     private lateinit var fileUploadUri: Uri
     private var location: GeoPoint = GeoPoint(0.0, 0.0)
     private var imageUri: Uri? = null
+    private var deleted: Boolean = false
     private val cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         if (success) {
             binding.profilePic.setImageURI(imageUri)
@@ -101,8 +102,8 @@ class ParticularsActivity : AppCompatActivity() {
                     signedInUser = userSnapshot.toObject(User::class.java)
                     Log.i(TAG, "Signed-In User: $signedInUser")
 
-                    binding.etUsername.hint = signedInUser?.username.toString()
-                    binding.etAbout.hint = signedInUser?.description.toString()
+                    binding.etUsername.setText(signedInUser?.username)
+                    binding.etAbout.setText(signedInUser?.description)
 
                 }
                 .addOnFailureListener { exception ->
@@ -133,6 +134,12 @@ class ParticularsActivity : AppCompatActivity() {
             fetchLocation()
         }
 
+        binding.btnRemovePic.setOnClickListener {
+            imageUri = null
+            deleted = true
+            Glide.with(this).load("https://firebasestorage.googleapis.com/v0/b/looksea-43f7d.appspot.com/o/profilepics%2Fdefault_icon.png?alt=media&token=7e6d6755-726d-4f02-ae75-f74cda6dd748").into(binding.profilePic)
+        }
+
         binding.btnSuggest.setOnClickListener {
             handleAnalysis()
         }
@@ -140,6 +147,7 @@ class ParticularsActivity : AppCompatActivity() {
         binding.btnSubmit.setOnClickListener {
             handleSubmitButtonClick()
         }
+
     }
 
     private fun handleAnalysis() {
@@ -300,7 +308,12 @@ class ParticularsActivity : AppCompatActivity() {
                     }
             }
         } else {
-            newUrl = signedInUser?.file_url.toString()
+            if (!deleted) {
+                newUrl = signedInUser?.file_url.toString()
+            } else {
+                newUrl = ""
+            }
+
             val user = User(
                 newUsername,
                 newDesc,
@@ -372,4 +385,5 @@ class ParticularsActivity : AppCompatActivity() {
                 }
         }
     }
+
 }

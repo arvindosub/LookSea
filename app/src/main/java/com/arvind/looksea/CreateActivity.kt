@@ -243,7 +243,9 @@ class CreateActivity : AppCompatActivity() {
                             tagString += "#${label.text.lowercase()} "
                             Log.i(TAG, "${label.index}. ${label.text}: ${label.confidence}")
                         }
-                        tagString = tagString.dropLast(1)
+                        fetchLocation()
+                        tagString += "#location=$location"
+                        //tagString = tagString.dropLast(1)
                         Log.i(TAG, tagString)
                         binding.etDescription.setText(tagString)
                     }
