@@ -49,6 +49,7 @@ class CreateActivity : AppCompatActivity() {
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private lateinit var fileReference: StorageReference
     private lateinit var fileUploadUri: Uri
+    private var privacy: String? = null
     private var location: GeoPoint = GeoPoint(0.0, 0.0)
     private var imageUri: Uri? = null
     private var videoUri: Uri? = null
@@ -137,6 +138,8 @@ class CreateActivity : AppCompatActivity() {
             }
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
+
+        binding.tvPrivacy.text = "Privacy"
 
         binding.rgbImage.setOnClickListener {
             binding.btnChooseFile.isVisible = true
@@ -277,6 +280,12 @@ class CreateActivity : AppCompatActivity() {
                 fileType = "survey"
             }
 
+            if (binding.rgbFriends.isChecked) {
+                privacy = "friends"
+            } else {
+                privacy = "public"
+            }
+
             val post = Post(
                 creationTime!!,
                 desc!!,
@@ -285,7 +294,8 @@ class CreateActivity : AppCompatActivity() {
                 "NA",
                 location,
                 userId,
-                signedInUser?.username
+                signedInUser?.username,
+                privacy.toString()
             )
 
             firestoreDb.collection("artifacts").add(post)

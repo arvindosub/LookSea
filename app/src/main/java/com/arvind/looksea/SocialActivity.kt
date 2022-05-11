@@ -12,6 +12,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.arvind.looksea.databinding.ActivitySocialBinding
+import com.arvind.looksea.models.Item
+import com.google.firebase.firestore.FieldPath
 
 private const val TAG = "SocialActivity"
 
@@ -39,25 +41,35 @@ class SocialActivity : AppCompatActivity() {
         adapterFriends = UserAdapter(this, friend)
         binding.rvFriends.adapter = adapterFriends
         binding.rvFriends.layoutManager = LinearLayoutManager(this)
-        firestoreDb.collection("friendlists").document(userId as String)
-            .collection("myfriends")
+        firestoreDb.collection("links")
+            .document(userId as String)
+            .collection("friend")
             .get()
-            .addOnSuccessListener { requestSnapshots ->
-                friendList = requestSnapshots.toObjects((User::class.java))
-                Log.i(TAG, "FRIENDS: $friend")
-                friend.clear()
-                friend.addAll(friendList)
-                adapterFriends.notifyDataSetChanged()
+            .addOnSuccessListener { snapshots ->
+                var allFriends = mutableListOf<String>()
+                allFriends.add("null")
+                snapshots.forEach { doc ->
+                    allFriends.add(doc.id)
+                }
+                firestoreDb.collection("artifacts")
+                    .whereIn(FieldPath.documentId(), allFriends)
+                    .get()
+                    .addOnSuccessListener { friendSnapshots ->
+                        friendList = friendSnapshots.toObjects(User::class.java)
+                        friend.clear()
+                        friend.addAll(friendList)
+                        adapterFriends.notifyDataSetChanged()
 
-                adapterFriends.setOnItemClickListener(object : UserAdapter.onItemClickListener {
-                    override fun onItemClick(position: Int) {
-                        val person = friend[position]
-                        Log.i(TAG, "$person")
-                        val intent = Intent(this@SocialActivity, ProfileActivity::class.java)
-                        intent.putExtra(EXTRA_USERNAME, person.username)
-                        startActivity(intent)
+                        adapterFriends.setOnItemClickListener(object : UserAdapter.onItemClickListener {
+                            override fun onItemClick(position: Int) {
+                                val person = friend[position]
+                                Log.i(TAG, "$person")
+                                val intent = Intent(this@SocialActivity, ProfileActivity::class.java)
+                                intent.putExtra(EXTRA_USERNAME, person.username)
+                                startActivity(intent)
+                            }
+                        })
                     }
-                })
             }
     }
 
@@ -66,15 +78,15 @@ class SocialActivity : AppCompatActivity() {
         adapterRequests = UserAdapter(this, request)
         binding.rvRequests.adapter = adapterRequests
         binding.rvRequests.layoutManager = LinearLayoutManager(this)
-        firestoreDb.collection("friendrequests").document(userId as String)
-            .collection("received")
+        firestoreDb.collection("links").document(userId as String)
+            .collection("receivedrequest")
             .get()
             .addOnSuccessListener { receivedOnly ->
                 requestList = receivedOnly.toObjects((User::class.java))
                 request.clear()
                 request.addAll(requestList)
-                firestoreDb.collection("friendrequests").document(userId as String)
-                    .collection("sent")
+                firestoreDb.collection("links").document(userId as String)
+                    .collection("sentrequest")
                     .get()
                     .addOnSuccessListener { requestSnapshots ->
                         requestList = requestSnapshots.toObjects((User::class.java))

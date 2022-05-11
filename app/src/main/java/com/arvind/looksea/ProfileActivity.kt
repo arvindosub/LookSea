@@ -51,9 +51,29 @@ class ProfileActivity : AppCompatActivity() {
 
                 imageGridView.onItemClickListener =
                     AdapterView.OnItemClickListener { _, _, position, _ ->
-                        val intent = Intent(this@ProfileActivity, PostActivity::class.java)
-                        intent.putExtra(EXTRA_POSTTIME, images[position].creationTimeMs.toString())
-                        startActivity(intent)
+                        if (images[position].privacy == "public" || images[position].userId == userId) {
+                            val intent = Intent(this@ProfileActivity, PostActivity::class.java)
+                            intent.putExtra(EXTRA_POSTTIME, images[position].creationTimeMs.toString())
+                            startActivity(intent)
+                        } else {
+                            firestoreDb.collection("links")
+                                .document(images[position].userId as String)
+                                .collection("friend")
+                                .get()
+                                .addOnSuccessListener { friendSnapshots ->
+                                    var allFriends = mutableListOf<String>()
+                                    friendSnapshots.forEach { doc ->
+                                        allFriends.add(doc.id)
+                                    }
+                                    if (userId in allFriends) {
+                                        val intent = Intent(this@ProfileActivity, PostActivity::class.java)
+                                        intent.putExtra(EXTRA_POSTTIME, images[position].creationTimeMs.toString())
+                                        startActivity(intent)
+                                    } else {
+                                        Toast.makeText(this@ProfileActivity, "You do not have access to view this post!", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                        }
                     }
             }
     }
@@ -80,9 +100,29 @@ class ProfileActivity : AppCompatActivity() {
 
                 videoGridView.onItemClickListener =
                     AdapterView.OnItemClickListener { _, _, position, _ ->
-                        val intent = Intent(this@ProfileActivity, PostActivity::class.java)
-                        intent.putExtra(EXTRA_POSTTIME, videos[position].creationTimeMs.toString())
-                        startActivity(intent)
+                        if (videos[position].privacy == "public" || videos[position].userId == userId) {
+                            val intent = Intent(this@ProfileActivity, PostActivity::class.java)
+                            intent.putExtra(EXTRA_POSTTIME, videos[position].creationTimeMs.toString())
+                            startActivity(intent)
+                        } else {
+                            firestoreDb.collection("links")
+                                .document(videos[position].userId as String)
+                                .collection("friend")
+                                .get()
+                                .addOnSuccessListener { friendSnapshots ->
+                                    var allFriends = mutableListOf<String>()
+                                    friendSnapshots.forEach { doc ->
+                                        allFriends.add(doc.id)
+                                    }
+                                    if (userId in allFriends) {
+                                        val intent = Intent(this@ProfileActivity, PostActivity::class.java)
+                                        intent.putExtra(EXTRA_POSTTIME, videos[position].creationTimeMs.toString())
+                                        startActivity(intent)
+                                    } else {
+                                        Toast.makeText(this@ProfileActivity, "You do not have access to view this post!", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                        }
                     }
             }
     }
@@ -109,9 +149,29 @@ class ProfileActivity : AppCompatActivity() {
 
                 audioGridView.onItemClickListener =
                     AdapterView.OnItemClickListener { _, _, position, _ ->
-                        val intent = Intent(this@ProfileActivity, PostActivity::class.java)
-                        intent.putExtra(EXTRA_POSTTIME, audio[position].creationTimeMs.toString())
-                        startActivity(intent)
+                        if (audio[position].privacy == "public" || audio[position].userId == userId) {
+                            val intent = Intent(this@ProfileActivity, PostActivity::class.java)
+                            intent.putExtra(EXTRA_POSTTIME, audio[position].creationTimeMs.toString())
+                            startActivity(intent)
+                        } else {
+                            firestoreDb.collection("links")
+                                .document(audio[position].userId as String)
+                                .collection("friend")
+                                .get()
+                                .addOnSuccessListener { friendSnapshots ->
+                                    var allFriends = mutableListOf<String>()
+                                    friendSnapshots.forEach { doc ->
+                                        allFriends.add(doc.id)
+                                    }
+                                    if (userId in allFriends) {
+                                        val intent = Intent(this@ProfileActivity, PostActivity::class.java)
+                                        intent.putExtra(EXTRA_POSTTIME, audio[position].creationTimeMs.toString())
+                                        startActivity(intent)
+                                    } else {
+                                        Toast.makeText(this@ProfileActivity, "You do not have access to view this post!", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                        }
                     }
             }
     }
@@ -138,9 +198,29 @@ class ProfileActivity : AppCompatActivity() {
 
                 textGridView.onItemClickListener =
                     AdapterView.OnItemClickListener { _, _, position, _ ->
-                        val intent = Intent(this@ProfileActivity, PostActivity::class.java)
-                        intent.putExtra(EXTRA_POSTTIME, text[position].creationTimeMs.toString())
-                        startActivity(intent)
+                        if (text[position].privacy == "public" || text[position].userId == userId) {
+                            val intent = Intent(this@ProfileActivity, PostActivity::class.java)
+                            intent.putExtra(EXTRA_POSTTIME, text[position].creationTimeMs.toString())
+                            startActivity(intent)
+                        } else {
+                            firestoreDb.collection("links")
+                                .document(text[position].userId as String)
+                                .collection("friend")
+                                .get()
+                                .addOnSuccessListener { friendSnapshots ->
+                                    var allFriends = mutableListOf<String>()
+                                    friendSnapshots.forEach { doc ->
+                                        allFriends.add(doc.id)
+                                    }
+                                    if (userId in allFriends) {
+                                        val intent = Intent(this@ProfileActivity, PostActivity::class.java)
+                                        intent.putExtra(EXTRA_POSTTIME, text[position].creationTimeMs.toString())
+                                        startActivity(intent)
+                                    } else {
+                                        Toast.makeText(this@ProfileActivity, "You do not have access to view this post!", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                        }
                     }
             }
     }
@@ -179,8 +259,8 @@ class ProfileActivity : AppCompatActivity() {
                         }
                         Log.i(TAG, "Current User: $currUser")
 
-                        firestoreDb.collection("friendrequests").document(userId as String)
-                            .collection("sent").document(currUserId as String)
+                        firestoreDb.collection("links").document(userId as String)
+                            .collection("sentrequest").document(currUserId as String)
                             .get()
                             .addOnSuccessListener { sentResult ->
                                 var contact = false
@@ -189,8 +269,8 @@ class ProfileActivity : AppCompatActivity() {
                                     contact = true
                                 }
 
-                                firestoreDb.collection("friendrequests").document(userId as String)
-                                    .collection("received").document(currUserId as String)
+                                firestoreDb.collection("links").document(userId as String)
+                                    .collection("receivedrequest").document(currUserId as String)
                                     .get()
                                     .addOnSuccessListener { receivedResult ->
                                         Log.i(TAG, "RECEIVED: ${receivedResult.data}")
@@ -332,12 +412,12 @@ class ProfileActivity : AppCompatActivity() {
         val curr = currUser
         val sign = signedInUser
         if (curr != null) {
-            firestoreDb.collection("friendrequests").document(userId as String)
-                .collection("sent").document(currUserId as String).set(curr)
+            firestoreDb.collection("links").document(userId as String)
+                .collection("sentrequest").document(currUserId as String).set(curr)
         }
         if (sign != null) {
-            firestoreDb.collection("friendrequests").document(currUserId as String)
-                .collection("received").document(userId as String).set(sign)
+            firestoreDb.collection("links").document(currUserId as String)
+                .collection("receivedrequest").document(userId as String).set(sign)
         }
 
         Toast.makeText(this, "Friend Request Sent...", Toast.LENGTH_SHORT).show()
@@ -347,20 +427,20 @@ class ProfileActivity : AppCompatActivity() {
 
     private fun rejectFriendRequest() {
         if (requestReceiver == true) {
-            firestoreDb.collection("friendrequests").document(userId as String)
-                .collection("received").document(currUserId as String).delete()
+            firestoreDb.collection("links").document(userId as String)
+                .collection("receivedrequest").document(currUserId as String).delete()
 
-            firestoreDb.collection("friendrequests").document(currUserId as String)
-                .collection("sent").document(userId as String).delete()
+            firestoreDb.collection("links").document(currUserId as String)
+                .collection("sentrequest").document(userId as String).delete()
 
             Toast.makeText(this, "Friend Request Rejected...", Toast.LENGTH_SHORT).show()
 
         } else {
-            firestoreDb.collection("friendrequests").document(userId as String)
-                .collection("sent").document(currUserId as String).delete()
+            firestoreDb.collection("links").document(userId as String)
+                .collection("sentrequest").document(currUserId as String).delete()
 
-            firestoreDb.collection("friendrequests").document(currUserId as String)
-                .collection("received").document(userId as String).delete()
+            firestoreDb.collection("links").document(currUserId as String)
+                .collection("receivedrequest").document(userId as String).delete()
 
             Toast.makeText(this, "Friend Request Cancelled...", Toast.LENGTH_SHORT).show()
 
@@ -381,11 +461,11 @@ class ProfileActivity : AppCompatActivity() {
         firestoreDb.collection("links").document(currUserId as String)
             .collection("friend").document(userId as String).set(Link("friend","$currUserId"))
 
-        firestoreDb.collection("friendrequests").document(userId as String)
-            .collection("received").document(currUserId as String).delete()
+        firestoreDb.collection("links").document(userId as String)
+            .collection("receivedrequest").document(currUserId as String).delete()
 
-        firestoreDb.collection("friendrequests").document(currUserId as String)
-            .collection("sent").document(userId as String).delete()
+        firestoreDb.collection("links").document(currUserId as String)
+            .collection("sentrequest").document(userId as String).delete()
 
         Toast.makeText(this, "Friend Request Accepted...", Toast.LENGTH_SHORT).show()
         finish()

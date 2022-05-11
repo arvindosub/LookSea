@@ -58,6 +58,8 @@ class PostAdapter (val context: Context, private val posts: List<Post>) : Recycl
 
     override fun getItemCount() = posts.size
 
+    // add linkage to commentadapter
+
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.bind(posts[position])
     }

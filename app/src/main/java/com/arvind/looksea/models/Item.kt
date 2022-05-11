@@ -11,5 +11,6 @@ data class Item(
     @get:PropertyName("file_url") @set:PropertyName("file_url") var fileUrl: String = "",
     var location: GeoPoint = GeoPoint(0.0, 0.0),
     @get:PropertyName("user") @set:PropertyName("user") var userId: String? = "",
-    var username: String? = ""
+    var username: String? = "",
+    var privacy: String? = ""
 )

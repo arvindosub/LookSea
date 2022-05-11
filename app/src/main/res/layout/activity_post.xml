@@ -37,6 +37,38 @@
                 android:layout_gravity="center"
                 android:visibility="invisible" />
 
+            <RadioGroup
+                android:id="@+id/rgPrivacy"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="invisible">
+
+                <TextView
+                    android:id="@+id/tvPrivacy"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="14dp"
+                    android:textColor="@color/black"
+                    android:layout_marginBottom="5dp"
+                    tools:text="Privacy" />
+
+                <RadioButton
+                    android:id="@+id/rgbPublic"
+                    android:layout_width="wrap_content"
+                    android:layout_height="25dp"
+                    android:textSize="12dp"
+                    android:text="Public" />
+
+                <RadioButton
+                    android:id="@+id/rgbFriends"
+                    android:layout_width="wrap_content"
+                    android:layout_height="25dp"
+                    android:textSize="12dp"
+                    android:text="Friends" />
+
+            </RadioGroup>
+
             <TextView
                 android:id="@+id/tvLikes"
                 android:layout_width="40dp"

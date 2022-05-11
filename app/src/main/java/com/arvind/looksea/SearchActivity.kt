@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Toast
 import com.arvind.looksea.models.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -112,8 +113,8 @@ class SearchActivity : AppCompatActivity() {
                                             firestoreDb.collection("artifacts")
                                                 .whereIn(FieldPath.documentId(), idList)
                                                 .get()
-                                                .addOnSuccessListener { friendSnapshots ->
-                                                    searchList = friendSnapshots.toObjects((Item::class.java))
+                                                .addOnSuccessListener { docSnapshots ->
+                                                    searchList = docSnapshots.toObjects((Item::class.java))
                                                     search.clear()
                                                     search.addAll(searchList)
                                                     adapterSearch.notifyDataSetChanged()
@@ -191,9 +192,30 @@ class SearchActivity : AppCompatActivity() {
                             intent.putExtra(EXTRA_USERNAME, item.username)
                             startActivity(intent)
                         } else {
-                            val intent = Intent(this@SearchActivity, PostActivity::class.java)
-                            intent.putExtra(EXTRA_POSTTIME, item.creationTimeMs.toString())
-                            startActivity(intent)
+                            if (item.privacy == "public" || item.userId == userId) {
+                                val intent = Intent(this@SearchActivity, PostActivity::class.java)
+                                intent.putExtra(EXTRA_POSTTIME, item.creationTimeMs.toString())
+                                startActivity(intent)
+                            } else {
+                                firestoreDb.collection("links")
+                                    .document(item.userId as String)
+                                    .collection("friend")
+                                    .get()
+                                    .addOnSuccessListener { friendSnapshots ->
+                                        var allFriends = mutableListOf<String>()
+                                        friendSnapshots.forEach { doc ->
+                                            allFriends.add(doc.id)
+                                        }
+                                        if (userId in allFriends) {
+                                            val intent = Intent(this@SearchActivity, PostActivity::class.java)
+                                            intent.putExtra(EXTRA_POSTTIME, item.creationTimeMs.toString())
+                                            startActivity(intent)
+                                        } else {
+                                            Toast.makeText(this@SearchActivity, "You do not have access to view this post!", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                            }
+
                         }
                     }
                 })

@@ -32,6 +32,7 @@ class PostActivity : AppCompatActivity() {
     private var userId: String? = ""
     private var post: Post? = null
     private var postId: String? = null
+    private var privacy: String? = null
     private lateinit var firestoreDb: FirebaseFirestore
     private lateinit var binding: ActivityPostBinding
     private lateinit var storageReference: StorageReference
@@ -96,6 +97,15 @@ class PostActivity : AppCompatActivity() {
                                     binding.etDescription.setText(post?.description)
                                     binding.btnSubmit.isVisible = true
                                     binding.btnDelete.isVisible = true
+                                    binding.rgPrivacy.isVisible = true
+                                    binding.tvPrivacy.text = "Privacy"
+                                    if (post?.privacy == "public") {
+                                        binding.rgbPublic.isChecked = true
+                                        privacy = "public"
+                                    } else {
+                                        binding.rgbFriends.isChecked = true
+                                        privacy = "private"
+                                    }
                                     binding.btnAnalyse.text = "Suggest"
                                     binding.btnSubmit.setOnClickListener {
                                         handleSubmitButtonClick()
@@ -192,7 +202,13 @@ class PostActivity : AppCompatActivity() {
     }
 
     private fun handleSubmitButtonClick() {
-        if (binding.etDescription.text.isBlank()) {
+        if (binding.rgbFriends.isChecked) {
+            privacy = "friends"
+        } else {
+            privacy = "public"
+        }
+
+        if (binding.etDescription.text.toString() == post?.description && post?.privacy == privacy) {
             Toast.makeText(this, "No changes made...", Toast.LENGTH_SHORT).show()
             return
         }
@@ -208,7 +224,8 @@ class PostActivity : AppCompatActivity() {
                 post?.fileUrl.toString(),
                 post?.location as GeoPoint,
                 post?.userId.toString(),
-                post?.username.toString()
+                post?.username.toString(),
+                privacy.toString()
             )
         }
         postId?.let {
@@ -356,6 +373,7 @@ class PostActivity : AppCompatActivity() {
         Log.i(TAG, "fpath is: ${fpath}")
         var linkList = mutableListOf<String>()
         var likeList = mutableListOf<String>()
+        var commentList = mutableListOf<String>()
 
         firestoreDb.collection("artifacts").document(pid).delete().addOnCompleteListener {
             firestoreDb.collection("links").document(userId as String).collection("owned").document(pid).delete()
@@ -379,24 +397,39 @@ class PostActivity : AppCompatActivity() {
                         firestoreDb.collection("links").document(item).collection("linked").document(pid).delete()
                     }
                 }.addOnSuccessListener {
-                    firestoreDb.collection("links").document(pid).collection("liked").get().addOnSuccessListener { likeSnapshots ->
-                        likeSnapshots.forEach { like ->
-                            likeList.add(like.id)
-                            firestoreDb.collection("links").document(pid).collection("liked")
-                                .document(like.id).delete()
+                    firestoreDb.collection("links").document(pid).collection("commented").get().addOnSuccessListener { commentSnapshots ->
+                        commentSnapshots.forEach { comment ->
+                            commentList.add(comment.id)
+                            firestoreDb.collection("links").document(pid).collection("commented")
+                                .document(comment.id).delete()
                         }
-                        Log.i(TAG, "likeList is: $likeList")
-
-                        likeList.forEach { item ->
-                            firestoreDb.collection("links").document(item).collection("liked")
+                        commentList.forEach { item ->
+                            firestoreDb.collection("links").document(item).collection("commented")
                                 .document(pid).delete()
                         }
-                        fileRef.delete().addOnCompleteListener {
-                            Toast.makeText(this, "Deleted post...", Toast.LENGTH_SHORT).show()
-                            finish()
-                            val intent = Intent(this, ProfileActivity::class.java)
-                            intent.putExtra(EXTRA_USERNAME, signedInUser?.username)
-                            startActivity(intent)
+
+                        firestoreDb.collection("links").document(pid).collection("liked").get().addOnSuccessListener { likeSnapshots ->
+                            likeSnapshots.forEach { like ->
+                                likeList.add(like.id)
+                                firestoreDb.collection("links").document(pid)
+                                    .collection("liked")
+                                    .document(like.id).delete()
+                            }
+                            Log.i(TAG, "likeList is: $likeList")
+
+                            likeList.forEach { item ->
+                                firestoreDb.collection("links").document(item)
+                                    .collection("liked")
+                                    .document(pid).delete()
+                            }
+                            fileRef.delete().addOnCompleteListener {
+                                Toast.makeText(this, "Deleted post...", Toast.LENGTH_SHORT)
+                                    .show()
+                                finish()
+                                val intent = Intent(this, ProfileActivity::class.java)
+                                intent.putExtra(EXTRA_USERNAME, signedInUser?.username)
+                                startActivity(intent)
+                            }
                         }
                     }
                 }

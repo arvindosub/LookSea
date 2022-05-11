@@ -63,6 +63,7 @@ open class HomeActivity : AppCompatActivity() {
                 val username = intent.getStringExtra(EXTRA_USERNAME)
                 // supportActionBar?.title = username
                 //filter out posts not from self or friends in home page
+                //
                 if (username != null) {
                     postsReference = postsReference.whereEqualTo("user.username", username)
 
@@ -74,7 +75,10 @@ open class HomeActivity : AppCompatActivity() {
                         val postList = snapshot.toObjects(Post::class.java)
                         var postIdList = mutableListOf<String>()
                         snapshot.forEach { doc ->
-                            postIdList.add(doc.id)
+                            var myPost = doc.toObject(Post::class.java)
+                            if (myPost.privacy == "public") {
+                                postIdList.add(doc.id)
+                            }
                         }
                         posts.clear()
                         posts.addAll(postList)
@@ -97,17 +101,21 @@ open class HomeActivity : AppCompatActivity() {
                                 }
                             }
                             Log.i(TAG, "Friends List: $friendList")
-                            postsReference = postsReference.whereIn("user", friendList)
+                            // postsReference = postsReference.whereIn("user", friendList)
 
                             postsReference.addSnapshotListener { snapshot, exception ->
                                 if (exception != null || snapshot == null) {
                                     Log.e(TAG, "Exception when querying posts", exception)
                                     return@addSnapshotListener
                                 }
-                                val postList = snapshot.toObjects(Post::class.java)
+                                var postList = mutableListOf<Post>()
                                 var postIdList = mutableListOf<String>()
                                 snapshot.forEach { doc ->
-                                    postIdList.add(doc.id)
+                                    var myPost = doc.toObject(Post::class.java)
+                                    if (myPost.privacy == "public" || myPost.userId in friendList) {
+                                        postList.add(myPost)
+                                        postIdList.add(doc.id)
+                                    }
                                 }
                                 posts.clear()
                                 posts.addAll(postList)
