@@ -31,6 +31,8 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.firestore.GeoPoint
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.face.FaceDetection
+import com.google.mlkit.vision.face.FaceDetectorOptions
 import com.google.mlkit.vision.label.ImageLabeling
 import com.google.mlkit.vision.label.defaults.ImageLabelerOptions
 import java.io.File
@@ -197,7 +199,6 @@ class CreateActivity : AppCompatActivity() {
             binding.btnCaptureNow.isVisible = false
             binding.btnSuggest.isVisible = false
             binding.etDescription.hint = "What is on your mind?"
-
             fetchLocation()
 
         }
@@ -236,24 +237,63 @@ class CreateActivity : AppCompatActivity() {
         } else {
             myUri = audioUri
         }
+
+        // High-accuracy landmark detection and face classification
+        val highAccuracyOpts = FaceDetectorOptions.Builder()
+            .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
+            .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
+            .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
+            .build()
+
+        // Real-time contour detection
+        /*val realTimeOpts = FaceDetectorOptions.Builder()
+            .setContourMode(FaceDetectorOptions.CONTOUR_MODE_ALL)
+            .build()*/
+
         Glide.with(this).asBitmap().load(myUri).into(object : CustomTarget<Bitmap?>() {
             override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap?>?) {
                 val image = InputImage.fromBitmap(resource, 0)
                 val labeler = ImageLabeling.getClient(ImageLabelerOptions.DEFAULT_OPTIONS)
-                labeler.process(image)
-                    .addOnSuccessListener { labels ->
-                        for (label in labels) {
-                            tagString += "#${label.text.lowercase()} "
-                            Log.i(TAG, "${label.index}. ${label.text}: ${label.confidence}")
+                val detector = FaceDetection.getClient(highAccuracyOpts)
+                detector.process(image)
+                    .addOnSuccessListener { faces ->
+                        var smileProb = 0.0
+                        var numFaces = 0
+                        for (face in faces) {
+                            smileProb += face.smilingProbability!!
+                            numFaces += 1
+                            Log.i(TAG, "Face: $face")
                         }
-                        fetchLocation()
-                        tagString += "#location=$location"
-                        //tagString = tagString.dropLast(1)
-                        Log.i(TAG, tagString)
-                        binding.etDescription.setText(tagString)
-                    }
-                    .addOnFailureListener { e ->
-                        Log.e(TAG, "$e")
+                        smileProb /= numFaces
+                        if (faces.isEmpty()) {
+                            Log.i(TAG, "No Faces Detected")
+                        } else {
+                            Log.i(TAG, "Total Number of Faces: $numFaces")
+                            Log.i(TAG, "Average Smile Probability: $smileProb")
+                        }
+                        labeler.process(image)
+                            .addOnSuccessListener { labels ->
+                                for (label in labels) {
+                                    tagString += "#${label.text.lowercase()} "
+                                    Log.i(TAG, "${label.index}. ${label.text}: ${label.confidence}")
+                                }
+                                tagString += "#faces=$numFaces "
+                                if (smileProb >= 0.5) {
+                                    tagString += "#emotion=happy "
+                                } else if (smileProb < 0.5 && smileProb > -0.5) {
+                                    tagString += "#emotion=serious "
+                                } else if (smileProb <= -0.5) {
+                                    tagString += "#emotion=sad "
+                                }
+                                fetchLocation()
+                                tagString += "#location=$location"
+                                //tagString = tagString.dropLast(1)
+                                Log.i(TAG, tagString)
+                                binding.etDescription.setText(tagString)
+                            }
+                            .addOnFailureListener { e ->
+                                Log.e(TAG, "$e")
+                            }
                     }
             }
 
