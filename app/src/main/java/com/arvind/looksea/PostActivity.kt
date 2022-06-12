@@ -84,54 +84,90 @@ class PostActivity : AppCompatActivity() {
                                 comments.addAll(commentList)
                                 adapter.notifyDataSetChanged()
 
-                                // post = response.toObjects(Post::class.java)[0]
-                                binding.imageView.isVisible = true
-                                binding.videoView.isVisible = false
+                                var updateList: MutableList<String> = ArrayList()
+                                var deleteList: MutableList<String> = ArrayList()
+                                firestoreDb.collection("links")
+                                    .document(userId!!)
+                                    .collection("update")
+                                    .get()
+                                    .addOnSuccessListener { updateDocs ->
+                                        updateDocs.forEach { ud ->
+                                            if (ud != null) {
+                                                updateList.add(ud.id)
+                                            }
+                                        }
 
-                                Log.i(TAG, "$post")
+                                        firestoreDb.collection("links")
+                                            .document(userId!!)
+                                            .collection("delete")
+                                            .get()
+                                            .addOnSuccessListener { deleteDocs ->
+                                                deleteDocs.forEach { dd ->
+                                                    if (dd != null) {
+                                                        deleteList.add(dd.id)
+                                                    }
+                                                }
 
-                                Glide.with(this).load(post?.fileUrl).into(binding.imageView)
-                                binding.etDescription.hint = post?.description.toString()
-                                binding.tvLikes.text = post?.likes.toString()
+                                                // post = response.toObjects(Post::class.java)[0]
+                                                binding.imageView.isVisible = true
+                                                binding.videoView.isVisible = false
 
-                                if (userId == post?.userId) {
-                                    binding.etDescription.isEnabled = true
-                                    binding.etDescription.setText(post?.description)
-                                    binding.btnSubmit.isVisible = true
-                                    binding.btnDelete.isVisible = true
-                                    binding.rgPrivacy.isVisible = true
-                                    binding.tvPrivacy.text = "Privacy"
-                                    if (post?.privacy == "public") {
-                                        binding.rgbPublic.isChecked = true
-                                        privacy = "public"
-                                    } else {
-                                        binding.rgbFriends.isChecked = true
-                                        privacy = "private"
+                                                Log.i(TAG, "$post")
+                                                Log.i(TAG, "$updateList")
+                                                Log.i(TAG, "$deleteList")
+
+                                                Glide.with(this).load(post?.fileUrl).into(binding.imageView)
+                                                binding.etDescription.hint = post?.description.toString()
+                                                binding.tvLikes.text = post?.likes.toString()
+
+                                                if (userId == post?.userId || postId in deleteList) {
+                                                    binding.btnDelete.isVisible = true
+                                                    binding.btnDelete.setOnClickListener {
+                                                        deletePost()
+                                                    }
+                                                }
+
+                                                if (userId == post?.userId || postId in updateList) {
+                                                    binding.etDescription.isEnabled = true
+                                                    binding.etDescription.setText(post?.description)
+                                                    binding.btnSubmit.isVisible = true
+                                                    binding.rgPrivacy.isVisible = true
+                                                    binding.tvPrivacy.text = "Privacy"
+                                                    if (post?.privacy == "public") {
+                                                        binding.rgbPublic.isChecked = true
+                                                        privacy = "public"
+                                                    } else {
+                                                        binding.rgbFriends.isChecked = true
+                                                        privacy = "private"
+                                                    }
+                                                    binding.btnAnalyse.text = "Suggest"
+                                                    binding.btnSubmit.setOnClickListener {
+                                                        handleSubmitButtonClick()
+                                                    }
+                                                }
+
+                                                binding.btnComment.setOnClickListener {
+                                                    uploadComment()
+                                                }
+
+                                                binding.btnAnalyse.setOnClickListener {
+                                                    handleAnalysis()
+                                                }
+
+                                                binding.btnLike.setOnClickListener {
+                                                    likePost()
+                                                }
+
+                                                binding.fabLink.setOnClickListener {
+                                                    handleLinkButtonClick()
+                                                }
+
+                                                binding.fabAccess.setOnClickListener {
+                                                    handleAccessButtonClick()
+                                                }
+
+                                            }
                                     }
-                                    binding.btnAnalyse.text = "Suggest"
-                                    binding.btnSubmit.setOnClickListener {
-                                        handleSubmitButtonClick()
-                                    }
-                                    binding.btnDelete.setOnClickListener {
-                                        deletePost()
-                                    }
-                                }
-
-                                binding.btnComment.setOnClickListener {
-                                    uploadComment()
-                                }
-
-                                binding.btnAnalyse.setOnClickListener {
-                                    handleAnalysis()
-                                }
-
-                                binding.btnLike.setOnClickListener {
-                                    likePost()
-                                }
-
-                                binding.fabLink.setOnClickListener {
-                                    handleLinkButtonClick()
-                                }
 
                             }
                     }
@@ -199,6 +235,13 @@ class PostActivity : AppCompatActivity() {
     private fun handleLinkButtonClick() {
         val id = postId
         val intent = Intent(this, LinkActivity::class.java)
+        intent.putExtra(EXTRA_ARTIFACTID, id)
+        startActivity(intent)
+    }
+
+    private fun handleAccessButtonClick() {
+        val id = postId
+        val intent = Intent(this, AccessActivity::class.java)
         intent.putExtra(EXTRA_ARTIFACTID, id)
         startActivity(intent)
     }

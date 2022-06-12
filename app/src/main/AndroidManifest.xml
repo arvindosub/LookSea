@@ -40,6 +40,9 @@
             android:name="com.arvind.looksea.LinkActivity"
             android:exported="false" />
         <activity
+            android:name="com.arvind.looksea.AccessActivity"
+            android:exported="false" />
+        <activity
             android:name="com.arvind.looksea.HomeActivity"
             android:exported="false" />
         <activity

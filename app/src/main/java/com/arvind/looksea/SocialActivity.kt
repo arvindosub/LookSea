@@ -26,7 +26,7 @@ class SocialActivity : AppCompatActivity() {
 
     private lateinit var search: MutableList<User>
     private lateinit var adapterSearch: UserAdapter
-    private lateinit var searchList: MutableList<User>
+    private var searchList = mutableListOf<User>()
 
     private lateinit var friend: MutableList<User>
     private lateinit var adapterFriends: UserAdapter
@@ -133,16 +133,21 @@ class SocialActivity : AppCompatActivity() {
                         search.clear()
                         adapterSearch.notifyDataSetChanged()
                     } else {
+                        searchList.clear()
                         firestoreDb.collection("artifacts")
-                            .whereEqualTo("type", "user")
-                            .whereGreaterThanOrEqualTo("username", it.toString())
+                            .whereIn("type", mutableListOf("user"))
                             .get()
                             .addOnSuccessListener { querySnapshots ->
-                                searchList = querySnapshots.toObjects((User::class.java))
-                                Log.i(TAG, "$searchList")
+                                querySnapshots.forEach { doc ->
+                                    var queryItem = doc.toObject((User::class.java))
+                                    if (queryItem.username.contains(it.toString(), ignoreCase = true) && !searchList.contains(doc.toObject((User::class.java)))) {
+                                        searchList.add(queryItem)
+                                    }
+                                }
                                 search.clear()
                                 search.addAll(searchList)
                                 adapterSearch.notifyDataSetChanged()
+                                Log.i(TAG, "zz $searchList")
                             }
                     }
                 }

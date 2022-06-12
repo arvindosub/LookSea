@@ -7,6 +7,7 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
+import androidx.core.view.isVisible
 import com.arvind.looksea.models.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -26,6 +27,7 @@ class SearchActivity : AppCompatActivity() {
     private lateinit var search: MutableList<Item>
     private lateinit var adapterSearch: ItemAdapter
     private var searchList = mutableListOf<Item>()
+    private var searchIdList = mutableListOf<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,6 +50,7 @@ class SearchActivity : AppCompatActivity() {
                 binding.etSearch.addTextChangedListener {
                     if (it.toString() == "") {
                         searchList.clear()
+                        searchIdList.clear()
                         search.clear()
                         adapterSearch.notifyDataSetChanged()
                     } else if (it.toString().contains("/friendswith ")) {
@@ -78,6 +81,9 @@ class SearchActivity : AppCompatActivity() {
                                                 .get()
                                                 .addOnSuccessListener { friendSnapshots ->
                                                     searchList = friendSnapshots.toObjects((Item::class.java))
+                                                    friendSnapshots.forEach { friend ->
+                                                        searchIdList.add(friend.id)
+                                                    }
                                                     search.clear()
                                                     search.addAll(searchList)
                                                     adapterSearch.notifyDataSetChanged()
@@ -89,6 +95,7 @@ class SearchActivity : AppCompatActivity() {
                             }
                     } else if (it.toString().contains("/likedby ")) {
                         searchList.clear()
+                        searchIdList.clear()
                         var searchTerm = it.toString().split(' ')[1]
                         firestoreDb.collection("artifacts")
                             .whereEqualTo("type", "user")
@@ -115,6 +122,9 @@ class SearchActivity : AppCompatActivity() {
                                                 .get()
                                                 .addOnSuccessListener { docSnapshots ->
                                                     searchList = docSnapshots.toObjects((Item::class.java))
+                                                    docSnapshots.forEach { doc ->
+                                                        searchIdList.add(doc.id)
+                                                    }
                                                     search.clear()
                                                     search.addAll(searchList)
                                                     adapterSearch.notifyDataSetChanged()
@@ -125,6 +135,7 @@ class SearchActivity : AppCompatActivity() {
                             }
                     } else if (it.toString()[0].toString() == "/" && it.toString().contains(" ")) {
                         searchList.clear()
+                        searchIdList.clear()
                         var searchType = it.toString().split(' ')[0].drop(1)
                         var searchTerm = it.toString().split(' ')[1]
                         if (searchType == "user") {
@@ -134,6 +145,9 @@ class SearchActivity : AppCompatActivity() {
                                 .get()
                                 .addOnSuccessListener { querySnapshots ->
                                     searchList = querySnapshots.toObjects((Item::class.java))
+                                    querySnapshots.forEach { query ->
+                                        searchIdList.add(query.id)
+                                    }
                                     search.clear()
                                     search.addAll(searchList)
                                     adapterSearch.notifyDataSetChanged()
@@ -150,6 +164,7 @@ class SearchActivity : AppCompatActivity() {
                                         for (desc in descList) {
                                             if (desc.contains(searchTerm, ignoreCase = true) && !searchList.contains(doc.toObject((Item::class.java)))) {
                                                 searchList.add(doc.toObject((Item::class.java)))
+                                                searchIdList.add(doc.id)
                                             }
                                         }
                                     }
@@ -161,6 +176,7 @@ class SearchActivity : AppCompatActivity() {
                         }
                     } else {
                         searchList.clear()
+                        searchIdList.clear()
                         firestoreDb.collection("artifacts")
                             .whereIn("type", mutableListOf("user", "image", "video", "text", "audio"))
                             .get()
@@ -170,10 +186,12 @@ class SearchActivity : AppCompatActivity() {
                                     for (desc in queryItem.description.split(' ')) {
                                         if (desc.contains(it.toString(), ignoreCase = true) && !searchList.contains(doc.toObject((Item::class.java)))) {
                                             searchList.add(queryItem)
+                                            searchIdList.add(doc.id)
                                         }
                                     }
                                     if (queryItem.username.toString().contains(it.toString(), ignoreCase = true) && !searchList.contains(doc.toObject((Item::class.java)))) {
                                         searchList.add(queryItem)
+                                        searchIdList.add(doc.id)
                                     }
                                 }
                                 search.clear()
@@ -197,29 +215,43 @@ class SearchActivity : AppCompatActivity() {
                                 intent.putExtra(EXTRA_POSTTIME, item.creationTimeMs.toString())
                                 startActivity(intent)
                             } else {
+                                var allFriends = mutableListOf<String>()
+                                var readList: MutableList<String> = ArrayList()
                                 firestoreDb.collection("links")
                                     .document(item.userId as String)
                                     .collection("friend")
                                     .get()
                                     .addOnSuccessListener { friendSnapshots ->
-                                        var allFriends = mutableListOf<String>()
                                         friendSnapshots.forEach { doc ->
                                             allFriends.add(doc.id)
                                         }
-                                        if (userId in allFriends) {
-                                            val intent = Intent(this@SearchActivity, PostActivity::class.java)
-                                            intent.putExtra(EXTRA_POSTTIME, item.creationTimeMs.toString())
-                                            startActivity(intent)
-                                        } else {
-                                            Toast.makeText(this@SearchActivity, "You do not have access to view this post!", Toast.LENGTH_SHORT).show()
-                                        }
+
+                                        firestoreDb.collection("links")
+                                            .document(userId!!)
+                                            .collection("read")
+                                            .get()
+                                            .addOnSuccessListener { updateDocs ->
+                                                updateDocs.forEach { rd ->
+                                                    if (rd != null) {
+                                                        readList.add(rd.id)
+                                                    }
+                                                }
+
+                                                Log.i(TAG, "$readList")
+
+                                                if (userId in allFriends || searchIdList[position] in readList) {
+                                                    val intent = Intent(this@SearchActivity, PostActivity::class.java)
+                                                    intent.putExtra(EXTRA_POSTTIME, item.creationTimeMs.toString())
+                                                    startActivity(intent)
+                                                } else {
+                                                    Toast.makeText(this@SearchActivity, "You do not have access to view this post!", Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
                                     }
                             }
-
                         }
                     }
                 })
-
             }
             .addOnFailureListener { exception ->
                 Log.i(TAG, "Failed to fetch signed-in user", exception)

@@ -89,6 +89,7 @@ open class HomeActivity : AppCompatActivity() {
 
                 } else {
                     var friendList: MutableList<String> = ArrayList()
+                    var readList: MutableList<String> = ArrayList()
                     friendList.add(userId!!)
                     firestoreDb.collection("links")
                         .document(userId as String)
@@ -101,28 +102,40 @@ open class HomeActivity : AppCompatActivity() {
                                 }
                             }
                             Log.i(TAG, "Friends List: $friendList")
-                            // postsReference = postsReference.whereIn("user", friendList)
 
-                            postsReference.addSnapshotListener { snapshot, exception ->
-                                if (exception != null || snapshot == null) {
-                                    Log.e(TAG, "Exception when querying posts", exception)
-                                    return@addSnapshotListener
-                                }
-                                var postList = mutableListOf<Post>()
-                                var postIdList = mutableListOf<String>()
-                                snapshot.forEach { doc ->
-                                    var myPost = doc.toObject(Post::class.java)
-                                    if (myPost.privacy == "public" || myPost.userId in friendList) {
-                                        postList.add(myPost)
-                                        postIdList.add(doc.id)
+                            firestoreDb.collection("links")
+                                .document(userId as String)
+                                .collection("read")
+                                .get()
+                                .addOnSuccessListener { readDocs ->
+                                    readDocs.forEach { rd ->
+                                        if (rd != null) {
+                                            readList.add(rd.id)
+                                        }
+                                    }
+
+                                    // postsReference = postsReference.whereIn("user", friendList)
+                                    postsReference.addSnapshotListener { snapshot, exception ->
+                                        if (exception != null || snapshot == null) {
+                                            Log.e(TAG, "Exception when querying posts", exception)
+                                            return@addSnapshotListener
+                                        }
+                                        var postList = mutableListOf<Post>()
+                                        var postIdList = mutableListOf<String>()
+                                        snapshot.forEach { doc ->
+                                            var myPost = doc.toObject(Post::class.java)
+                                            if (myPost.privacy == "public" || myPost.userId in friendList || doc.id in readList) {
+                                                postList.add(myPost)
+                                                postIdList.add(doc.id)
+                                            }
+                                        }
+                                        posts.clear()
+                                        posts.addAll(postList)
+                                        postIds.clear()
+                                        postIds.addAll(postIdList)
+                                        adapter.notifyDataSetChanged()
                                     }
                                 }
-                                posts.clear()
-                                posts.addAll(postList)
-                                postIds.clear()
-                                postIds.addAll(postIdList)
-                                adapter.notifyDataSetChanged()
-                            }
                         }
                 }
 
