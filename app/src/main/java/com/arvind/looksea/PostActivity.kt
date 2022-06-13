@@ -52,7 +52,7 @@ class PostActivity : AppCompatActivity() {
         userId = FirebaseAuth.getInstance().currentUser?.uid as String
 
         comments = mutableListOf()
-        adapter = CommentAdapter(this, comments)
+        adapter = CommentAdapter(this, comments, userId!!)
         binding.rvComments.adapter = adapter
         binding.rvComments.layoutManager = LinearLayoutManager(this)
 
@@ -86,6 +86,7 @@ class PostActivity : AppCompatActivity() {
 
                                 var updateList: MutableList<String> = ArrayList()
                                 var deleteList: MutableList<String> = ArrayList()
+                                var configList: MutableList<String> = ArrayList()
                                 firestoreDb.collection("links")
                                     .document(userId!!)
                                     .collection("update")
@@ -108,63 +109,83 @@ class PostActivity : AppCompatActivity() {
                                                     }
                                                 }
 
-                                                // post = response.toObjects(Post::class.java)[0]
-                                                binding.imageView.isVisible = true
-                                                binding.videoView.isVisible = false
+                                                firestoreDb.collection("links")
+                                                    .document(userId!!)
+                                                    .collection("configure")
+                                                    .get()
+                                                    .addOnSuccessListener { configDocs ->
+                                                        configDocs.forEach { cd ->
+                                                            if (cd != null) {
+                                                                configList.add(cd.id)
+                                                            }
+                                                        }
 
-                                                Log.i(TAG, "$post")
-                                                Log.i(TAG, "$updateList")
-                                                Log.i(TAG, "$deleteList")
+                                                        // post = response.toObjects(Post::class.java)[0]
+                                                        binding.imageView.isVisible = true
+                                                        binding.videoView.isVisible = false
+                                                        binding.tvPrivacy.text = "Privacy"
 
-                                                Glide.with(this).load(post?.fileUrl).into(binding.imageView)
-                                                binding.etDescription.hint = post?.description.toString()
-                                                binding.tvLikes.text = post?.likes.toString()
+                                                        Log.i(TAG, "$post")
+                                                        Log.i(TAG, "$updateList")
+                                                        Log.i(TAG, "$deleteList")
+                                                        Log.i(TAG, "$configList")
 
-                                                if (userId == post?.userId || postId in deleteList) {
-                                                    binding.btnDelete.isVisible = true
-                                                    binding.btnDelete.setOnClickListener {
-                                                        deletePost()
+                                                        Glide.with(this).load(post?.fileUrl)
+                                                            .into(binding.imageView)
+                                                        binding.etDescription.hint =
+                                                            post?.description.toString()
+                                                        binding.tvLikes.text =
+                                                            post?.likes.toString()
+
+                                                        if (userId == post?.userId || postId in deleteList) {
+                                                            binding.btnDelete.isVisible = true
+                                                            binding.btnDelete.setOnClickListener {
+                                                                deletePost()
+                                                            }
+                                                        }
+
+                                                        if (userId == post?.userId || postId in configList) {
+                                                            binding.rgPrivacy.isVisible = true
+                                                            if (post?.privacy == "public") {
+                                                                binding.rgbPublic.isChecked = true
+                                                                privacy = "public"
+                                                            } else {
+                                                                binding.rgbFriends.isChecked = true
+                                                                privacy = "private"
+                                                            }
+                                                            binding.btnSubmit.isVisible = true
+                                                        }
+
+                                                        if (userId == post?.userId || postId in updateList) {
+                                                            binding.etDescription.isEnabled = true
+                                                            binding.etDescription.setText(post?.description)
+                                                            binding.btnSubmit.isVisible = true
+                                                            binding.btnAnalyse.text = "Suggest"
+                                                            binding.btnSubmit.setOnClickListener {
+                                                                handleSubmitButtonClick()
+                                                            }
+                                                        }
+
+                                                        binding.btnComment.setOnClickListener {
+                                                            uploadComment()
+                                                        }
+
+                                                        binding.btnAnalyse.setOnClickListener {
+                                                            handleAnalysis()
+                                                        }
+
+                                                        binding.btnLike.setOnClickListener {
+                                                            likePost()
+                                                        }
+
+                                                        binding.fabLink.setOnClickListener {
+                                                            handleLinkButtonClick()
+                                                        }
+
+                                                        binding.fabAccess.setOnClickListener {
+                                                            handleAccessButtonClick()
+                                                        }
                                                     }
-                                                }
-
-                                                if (userId == post?.userId || postId in updateList) {
-                                                    binding.etDescription.isEnabled = true
-                                                    binding.etDescription.setText(post?.description)
-                                                    binding.btnSubmit.isVisible = true
-                                                    binding.rgPrivacy.isVisible = true
-                                                    binding.tvPrivacy.text = "Privacy"
-                                                    if (post?.privacy == "public") {
-                                                        binding.rgbPublic.isChecked = true
-                                                        privacy = "public"
-                                                    } else {
-                                                        binding.rgbFriends.isChecked = true
-                                                        privacy = "private"
-                                                    }
-                                                    binding.btnAnalyse.text = "Suggest"
-                                                    binding.btnSubmit.setOnClickListener {
-                                                        handleSubmitButtonClick()
-                                                    }
-                                                }
-
-                                                binding.btnComment.setOnClickListener {
-                                                    uploadComment()
-                                                }
-
-                                                binding.btnAnalyse.setOnClickListener {
-                                                    handleAnalysis()
-                                                }
-
-                                                binding.btnLike.setOnClickListener {
-                                                    likePost()
-                                                }
-
-                                                binding.fabLink.setOnClickListener {
-                                                    handleLinkButtonClick()
-                                                }
-
-                                                binding.fabAccess.setOnClickListener {
-                                                    handleAccessButtonClick()
-                                                }
 
                                             }
                                     }
@@ -183,6 +204,22 @@ class PostActivity : AppCompatActivity() {
                                 val intent = Intent(this@PostActivity, ProfileActivity::class.java)
                                 intent.putExtra(EXTRA_USERNAME, myUser!!.username)
                                 startActivity(intent)
+                            }
+                    }
+                })
+
+                adapter.setOnDeleteClickListener(object : CommentAdapter.onDeleteClickListener {
+                    override fun onDeleteClick(position: Int) {
+                        val thisUser = commentList[position].owner
+                        firestoreDb.collection("links").document(thisUser)
+                            .collection("commented").document(postId as String).delete()
+                            .addOnSuccessListener {
+                                firestoreDb.collection("links").document(postId as String)
+                                    .collection("commented").document(thisUser).delete()
+                                    .addOnSuccessListener {
+                                        Toast.makeText(this@PostActivity, "Comment Deleted!", Toast.LENGTH_SHORT).show()
+                                        this@PostActivity.recreate()
+                                    }
                             }
                     }
                 })

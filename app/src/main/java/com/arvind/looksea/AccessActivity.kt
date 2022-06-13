@@ -140,22 +140,39 @@ class AccessActivity : AppCompatActivity() {
         accessCode = accessCode.replace("\\s".toRegex(), "")
         var codeList = accessCode.split('/')
         Log.i(TAG, "$codeList")
-        if (("read" in codeList) && ("update" in codeList) && ("delete" in codeList) && (codeList.size == 4)) {
+
+        firestoreDb.collection("links").document(selUserId as String)
+            .collection("read").document(artifactId as String).delete()
+        firestoreDb.collection("links").document(selUserId as String)
+            .collection("update").document(artifactId as String).delete()
+        firestoreDb.collection("links").document(selUserId as String)
+            .collection("delete").document(artifactId as String).delete()
+        firestoreDb.collection("links").document(selUserId as String)
+            .collection("config").document(artifactId as String).delete()
+
+        if ("read" in codeList) {
             firestoreDb.collection("links").document(selUserId as String)
-                .collection("read").document(artifactId as String).set(Link("read","$userId"))
+                .collection("read").document(artifactId as String).set(Link("read", "$userId"))
+        }
+        if ("update" in codeList) {
             firestoreDb.collection("links").document(selUserId as String)
-                .collection("update").document(artifactId).set(Link("update","$userId"))
+                .collection("read").document(artifactId as String).set(Link("read", "$userId"))
+            firestoreDb.collection("links").document(selUserId as String)
+                .collection("update").document(artifactId).set(Link("update", "$userId"))
+        }
+        if ("delete" in codeList) {
+            firestoreDb.collection("links").document(selUserId as String)
+                .collection("read").document(artifactId as String).set(Link("read", "$userId"))
             firestoreDb.collection("links").document(selUserId as String)
                 .collection("delete").document(artifactId).set(Link("delete","$userId"))
-        } else if (("read" in codeList) && ("update" in codeList) && (codeList.size == 3)) {
-            firestoreDb.collection("links").document(selUserId as String)
-                .collection("read").document(artifactId as String).set(Link("read","$userId"))
-            firestoreDb.collection("links").document(selUserId as String)
-                .collection("update").document(artifactId).set(Link("update","$userId"))
-        } else if (("read" in codeList) && (codeList.size == 2)) {
-            firestoreDb.collection("links").document(selUserId as String)
-                .collection("read").document(artifactId as String).set(Link("read","$userId"))
         }
+        if ("configure" in codeList) {
+            firestoreDb.collection("links").document(selUserId as String)
+                .collection("read").document(artifactId as String).set(Link("read", "$userId"))
+            firestoreDb.collection("links").document(selUserId as String)
+                .collection("configure").document(artifactId as String).set(Link("configure","$userId"))
+        }
+
         binding.btnSubmit.isEnabled = true
         Toast.makeText(this, "Access Configured!", Toast.LENGTH_SHORT).show()
         finish()

@@ -53,20 +53,6 @@
                     android:layout_marginBottom="5dp"
                     tools:text="Privacy" />
 
-                <RadioButton
-                    android:id="@+id/rgbPublic"
-                    android:layout_width="wrap_content"
-                    android:layout_height="25dp"
-                    android:textSize="12dp"
-                    android:text="Public" />
-
-                <RadioButton
-                    android:id="@+id/rgbFriends"
-                    android:layout_width="wrap_content"
-                    android:layout_height="25dp"
-                    android:textSize="12dp"
-                    android:text="Friends" />
-
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/fabAccess"
                     android:layout_width="50dp"
@@ -83,6 +69,20 @@
                     app:srcCompat="@drawable/ic_access"
                     app:tint="@color/black"
                     tools:ignore="SpeakableTextPresentCheck" />
+
+                <RadioButton
+                    android:id="@+id/rgbPublic"
+                    android:layout_width="wrap_content"
+                    android:layout_height="25dp"
+                    android:textSize="12dp"
+                    android:text="Public" />
+
+                <RadioButton
+                    android:id="@+id/rgbFriends"
+                    android:layout_width="wrap_content"
+                    android:layout_height="25dp"
+                    android:textSize="12dp"
+                    android:text="Friends" />
 
             </RadioGroup>
 

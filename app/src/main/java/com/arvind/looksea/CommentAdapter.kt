@@ -1,9 +1,11 @@
 package com.arvind.looksea
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.arvind.looksea.models.Link
 import com.arvind.looksea.models.User
@@ -12,10 +14,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 import java.math.BigInteger
 import java.security.MessageDigest
 
-class CommentAdapter(val context: PostActivity, private val comments: List<Link>) : RecyclerView.Adapter<CommentAdapter.ViewHolder>() {
+class CommentAdapter(val context: PostActivity, private val comments: List<Link>, private val signedInUserID: String) : RecyclerView.Adapter<CommentAdapter.ViewHolder>() {
 
     private lateinit var cListener : onCommentClickListener
     private lateinit var uListener : onUserClickListener
+    private lateinit var dListener : onDeleteClickListener
     private lateinit var firestoreDb: FirebaseFirestore
 
     interface onCommentClickListener {
@@ -34,9 +37,17 @@ class CommentAdapter(val context: PostActivity, private val comments: List<Link>
         uListener = userListener
     }
 
+    interface onDeleteClickListener {
+        fun onDeleteClick(position : Int)
+    }
+
+    fun setOnDeleteClickListener(deleteListener: onDeleteClickListener) {
+        dListener = deleteListener
+    }
+
     override fun onCreateViewHolder(viewGroup: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(viewGroup.context).inflate(R.layout.item_comment, viewGroup, false)
-        return ViewHolder(view, cListener, uListener)
+        return ViewHolder(view, cListener, uListener, dListener)
     }
 
     override fun getItemCount() = comments.size
@@ -45,9 +56,12 @@ class CommentAdapter(val context: PostActivity, private val comments: List<Link>
         holder.bind(comments[position])
     }
 
-    inner class ViewHolder(itemView: View, commentListener: onCommentClickListener, userListener: onUserClickListener) : RecyclerView.ViewHolder(itemView) {
+    inner class ViewHolder(itemView: View, commentListener: onCommentClickListener, userListener: onUserClickListener, deleteListener: onDeleteClickListener) : RecyclerView.ViewHolder(itemView) {
         fun bind(comment: Link) {
             itemView.findViewById<TextView>(R.id.tvComment).text = comment.name
+            if (comment.owner == signedInUserID) {
+                itemView.findViewById<ImageButton>(R.id.btnDelete).isVisible = true
+            }
 
             firestoreDb = FirebaseFirestore.getInstance()
             firestoreDb.collection("artifacts")
@@ -71,6 +85,10 @@ class CommentAdapter(val context: PostActivity, private val comments: List<Link>
 
             itemView.findViewById<TextView>(R.id.tvUsername).setOnClickListener {
                 userListener.onUserClick(bindingAdapterPosition)
+            }
+
+            itemView.findViewById<ImageButton>(R.id.btnDelete).setOnClickListener {
+                deleteListener.onDeleteClick(bindingAdapterPosition)
             }
         }
 
