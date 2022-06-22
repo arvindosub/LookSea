@@ -2,6 +2,7 @@ package com.arvind.looksea
 
 import android.content.Context
 import android.text.format.DateUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,7 +18,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import java.math.BigInteger
 import java.security.MessageDigest
 
-class PostAdapter (val context: Context, private val posts: List<Post>) : RecyclerView.Adapter<PostAdapter.ViewHolder>() {
+class PostAdapter (val context: Context, private val posts: List<Post>, private val signedInUserID: String) : RecyclerView.Adapter<PostAdapter.ViewHolder>() {
 
     //var mediaControls: MediaController? = null
     //private var myVideo: VideoView? = null
@@ -25,7 +26,11 @@ class PostAdapter (val context: Context, private val posts: List<Post>) : Recycl
     private lateinit var pListener : onItemClickListener
     private lateinit var lListener : onLikeClickListener
     private lateinit var uListener : onUserClickListener
+    private lateinit var cListener : onCommentClickListener
     private lateinit var firestoreDb: FirebaseFirestore
+    private lateinit var comments: MutableList<Link>
+    private lateinit var adapter: CommentAdapter
+    private var commentList = mutableListOf<Link>()
 
     interface onItemClickListener {
         fun onItemClick(position : Int)
@@ -51,9 +56,17 @@ class PostAdapter (val context: Context, private val posts: List<Post>) : Recycl
         uListener = userListener
     }
 
+    interface onCommentClickListener {
+        fun onCommentClick(position : Int)
+    }
+
+    fun setOnCommentClickListener(commentListener: onCommentClickListener) {
+        cListener = commentListener
+    }
+
     override fun onCreateViewHolder(viewGroup: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(viewGroup.context).inflate(R.layout.item_post, viewGroup, false)
-        return ViewHolder(view, pListener, lListener, uListener)
+        return ViewHolder(view, pListener, lListener, uListener, cListener)
     }
 
     override fun getItemCount() = posts.size
@@ -64,13 +77,16 @@ class PostAdapter (val context: Context, private val posts: List<Post>) : Recycl
         holder.bind(posts[position])
     }
 
-    inner class ViewHolder(itemView: View, postListener: onItemClickListener, likeListener: onLikeClickListener, userListener: onUserClickListener) : RecyclerView.ViewHolder(itemView) {
+    inner class ViewHolder(itemView: View, postListener: onItemClickListener, likeListener: onLikeClickListener, userListener: onUserClickListener, commentListener: onCommentClickListener) : RecyclerView.ViewHolder(itemView) {
         private var toggleLike : ImageButton = itemView.findViewById<ImageButton>(R.id.btnLike)
         fun bind(post: Post) {
 
             val username = post.username as String
             itemView.findViewById<TextView>(R.id.tvUsername).text = post.username
             itemView.findViewById<TextView>(R.id.tvDescription).text = post.description
+
+            comments = mutableListOf()
+            adapter = CommentAdapter(context, comments, signedInUserID)
 
             if (post.type == "video") {
                 // rendering the video on the feed consumes a lot of bandwidth.
@@ -104,6 +120,7 @@ class PostAdapter (val context: Context, private val posts: List<Post>) : Recycl
             itemView.findViewById<TextView>(R.id.tvLikes).text = post.likes.toString()
 
             var userId = ""
+            var postId = ""
             firestoreDb = FirebaseFirestore.getInstance()
             firestoreDb.collection("artifacts")
                 .whereEqualTo("type", "user")
@@ -123,6 +140,29 @@ class PostAdapter (val context: Context, private val posts: List<Post>) : Recycl
                             } else {
                                 Glide.with(context).load(user?.file_url.toString()).into(itemView.findViewById<ImageView>(R.id.ivProfileImage))
                             }
+
+                            itemView.findViewById<RecyclerView>(R.id.rvComments).adapter = adapter
+                            itemView.findViewById<RecyclerView>(R.id.rvComments).layoutManager = LinearLayoutManager(context)
+
+                            firestoreDb.collection("artifacts")
+                                .whereNotEqualTo("type", "user")
+                                .whereEqualTo("file_url", user?.file_url.toString())
+                                .get()
+                                .addOnSuccessListener { postSnapshots ->
+                                    postSnapshots.forEach { postDoc ->
+                                        postId = postDoc.id
+                                    }
+                                    firestoreDb.collection("links")
+                                        .document(postId)
+                                        .collection("commented")
+                                        .get()
+                                        .addOnSuccessListener { commentSnapshots ->
+                                            commentList = commentSnapshots.toObjects(Link::class.java)
+                                            comments.clear()
+                                            comments.addAll(commentList)
+                                            Log.i("TEST","test: $comments")
+                                        }
+                                }
                         }
                 }
         }

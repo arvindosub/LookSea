@@ -363,7 +363,7 @@ class ProfileActivity : AppCompatActivity() {
     }
 
     private fun handleLinkButtonClick() {
-        val id = userId
+        val id = currUserId
         val intent = Intent(this, LinkActivity::class.java)
         intent.putExtra(EXTRA_ARTIFACTID, id)
         startActivity(intent)

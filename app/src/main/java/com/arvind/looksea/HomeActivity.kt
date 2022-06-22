@@ -35,6 +35,9 @@ open class HomeActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        firestoreDb = FirebaseFirestore.getInstance()
+        userId = FirebaseAuth.getInstance().currentUser?.uid as String
+
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
         // Create the layout file which represents one post - DONE
@@ -42,12 +45,10 @@ open class HomeActivity : AppCompatActivity() {
         posts = mutableListOf()
         postIds = mutableListOf()
         // Create the adapter
-        adapter = PostAdapter(this, posts)
+        adapter = PostAdapter(this, posts, userId!!)
         // Bind the adapter and layout manager to the RV
         binding.rvPosts.adapter = adapter
         binding.rvPosts.layoutManager = LinearLayoutManager(this)
-        firestoreDb = FirebaseFirestore.getInstance()
-        userId = FirebaseAuth.getInstance().currentUser?.uid as String
 
         firestoreDb.collection("artifacts")
             .document(userId!!)
@@ -159,6 +160,15 @@ open class HomeActivity : AppCompatActivity() {
 
                 adapter.setOnUserClickListener(object : PostAdapter.onUserClickListener {
                     override fun onUserClick(position: Int) {
+                        val thisUser = posts[position].username
+                        val intent = Intent(this@HomeActivity, ProfileActivity::class.java)
+                        intent.putExtra(EXTRA_USERNAME, thisUser)
+                        startActivity(intent)
+                    }
+                })
+
+                adapter.setOnCommentClickListener(object : PostAdapter.onCommentClickListener {
+                    override fun onCommentClick(position: Int) {
                         val thisUser = posts[position].username
                         val intent = Intent(this@HomeActivity, ProfileActivity::class.java)
                         intent.putExtra(EXTRA_USERNAME, thisUser)

@@ -1,6 +1,6 @@
 package com.arvind.looksea
 
-import android.util.Log
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,7 +14,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import java.math.BigInteger
 import java.security.MessageDigest
 
-class CommentAdapter(val context: PostActivity, private val comments: List<Link>, private val signedInUserID: String) : RecyclerView.Adapter<CommentAdapter.ViewHolder>() {
+class CommentAdapter(val context: Context, private val comments: List<Link>, private val signedInUserID: String) : RecyclerView.Adapter<CommentAdapter.ViewHolder>() {
 
     private lateinit var cListener : onCommentClickListener
     private lateinit var uListener : onUserClickListener

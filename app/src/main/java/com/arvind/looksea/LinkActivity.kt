@@ -220,14 +220,18 @@ class LinkActivity : AppCompatActivity() {
         var searchId = binding.etLinkedItem.text.toString()
         var linkName = binding.etLinkName.text.toString()
         var linkCollName = "linked"
-        if (searchId.length == 28 || artifactId!!.length == 28) {
+        if (searchId.length == 28 && artifactId!!.length == 28) {
+            linkCollName = "friend"
+        } else if (searchId.length == 28 || artifactId!!.length == 28) {
             linkCollName = "liked"
         }
         if (binding.etLinkName.text.isBlank() || binding.etLinkedItem.text.isBlank()) {
             Toast.makeText(this, "Using default link names.", Toast.LENGTH_SHORT).show()
             linkName = "default"
             Log.i(TAG, "${searchId.length}, ${artifactId!!.length}")
-            if (searchId.length == 28 || artifactId!!.length == 28) {
+            if (searchId.length == 28 && artifactId!!.length == 28) {
+                linkName = "friend"
+            } else if (searchId.length == 28 || artifactId!!.length == 28) {
                 linkName = "liked"
             }
         }
@@ -235,6 +239,9 @@ class LinkActivity : AppCompatActivity() {
             linkName,
             "$userId"
         )
+
+        Log.i(TAG, "artifact id: $artifactId")
+        Log.i(TAG, "search id: $searchId")
 
         firestoreDb.collection("links").document(artifactId as String)
             .collection("$linkCollName").document(searchId).set(linkVal)
@@ -248,13 +255,13 @@ class LinkActivity : AppCompatActivity() {
                 firestoreDb.collection("links").document(artifactId as String)
                     .collection("$linkCollName").document(searchId).set(linkVal)
                     .addOnCompleteListener { linkCreationTask ->
-                        if (artifactId!!.length == 28) {
+                        if (artifactId!!.length == 28 && searchId.length != 28) {
                             firestoreDb.collection("artifacts").document(searchId).get()
                                 .addOnSuccessListener { postSnapshot ->
                                     var post = postSnapshot.toObject(Post::class.java)
                                     firestoreDb.collection("artifacts").document(searchId).update("likes", post!!.likes+1)
                                 }
-                        } else if (searchId.length == 28) {
+                        } else if (searchId.length == 28 && artifactId!!.length != 28) {
                             firestoreDb.collection("artifacts").document(artifactId!!).get()
                                 .addOnSuccessListener { postSnapshot ->
                                     var post = postSnapshot.toObject(Post::class.java)
@@ -266,7 +273,7 @@ class LinkActivity : AppCompatActivity() {
                             Log.e(TAG, "Exception during Firebase operations", linkCreationTask.exception)
                             Toast.makeText(this, "Failed to link post...", Toast.LENGTH_SHORT).show()
                         }
-                        Toast.makeText(this, "Post linked!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Link created!", Toast.LENGTH_SHORT).show()
                         finish()
                     }
             }

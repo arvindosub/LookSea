@@ -264,7 +264,7 @@ class PostActivity : AppCompatActivity() {
                             Toast.makeText(this, "Failed to add comment...", Toast.LENGTH_SHORT).show()
                         }
                         Toast.makeText(this, "Comment Added!", Toast.LENGTH_SHORT).show()
-                        finish()
+                        this@PostActivity.recreate()
                     }
             }
     }
@@ -459,7 +459,9 @@ class PostActivity : AppCompatActivity() {
                                 tagString += "#location=${post?.location.toString()}"
                                 //tagString = tagString.dropLast(1)
                                 Log.i(TAG, tagString)
-                                binding.etDescription.setText(tagString)
+                                if (binding.etDescription.isEnabled) {
+                                    binding.etDescription.setText(tagString)
+                                }
                             }
                             .addOnFailureListener { e ->
                                 Log.e(TAG, "$e")
