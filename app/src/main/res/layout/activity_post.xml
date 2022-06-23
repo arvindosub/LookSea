@@ -37,55 +37,6 @@
                 android:layout_gravity="center"
                 android:visibility="invisible" />
 
-            <RadioGroup
-                android:id="@+id/rgPrivacy"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="invisible">
-
-                <TextView
-                    android:id="@+id/tvPrivacy"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textSize="14dp"
-                    android:textColor="@color/black"
-                    android:layout_marginBottom="5dp"
-                    tools:text="Privacy" />
-
-                <com.google.android.material.floatingactionbutton.FloatingActionButton
-                    android:id="@+id/fabAccess"
-                    android:layout_width="50dp"
-                    android:layout_height="50dp"
-                    app:fabCustomSize="50dp"
-                    android:layout_marginEnd="50dp"
-                    android:layout_marginBottom="15dp"
-                    android:backgroundTint="@color/colorSecondaryVariant"
-                    android:clickable="true"
-                    android:tint="@color/black"
-                    app:backgroundTint="@color/colorPrimary"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:srcCompat="@drawable/ic_access"
-                    app:tint="@color/black"
-                    tools:ignore="SpeakableTextPresentCheck" />
-
-                <RadioButton
-                    android:id="@+id/rgbPublic"
-                    android:layout_width="wrap_content"
-                    android:layout_height="25dp"
-                    android:textSize="12dp"
-                    android:text="Public" />
-
-                <RadioButton
-                    android:id="@+id/rgbFriends"
-                    android:layout_width="wrap_content"
-                    android:layout_height="25dp"
-                    android:textSize="12dp"
-                    android:text="Friends" />
-
-            </RadioGroup>
-
             <TextView
                 android:id="@+id/tvLikes"
                 android:layout_width="40dp"
@@ -128,6 +79,47 @@
             android:textColorHint="@color/black"
             android:textSize="12dp"
             android:maxLines="5" />
+
+        <LinearLayout
+            android:id="@+id/llPrivacy"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:visibility="invisible"
+            android:layout_marginTop="5dp">
+
+            <TextView
+                android:layout_width="60dp"
+                android:layout_height="match_parent"
+                android:text="Privacy: "
+                android:textAlignment="textStart"
+                android:layout_marginTop="15dp"
+                android:textColor="@color/black"
+                android:textSize="16dp" />
+
+            <EditText
+                android:id="@+id/etPrivacy"
+                android:layout_width="220dp"
+                android:layout_height="match_parent"
+                android:layout_marginTop="8dp"
+                android:ems="10"
+                android:hint="Group"
+                android:minHeight="45dp"
+                android:inputType="textMultiLine"
+                android:maxLines="1" />
+
+            <Button
+                android:id="@+id/btnPrivacy"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:backgroundTint="@color/colorSecondary"
+                android:textColor="@color/black"
+                android:layout_gravity="right"
+                android:text="Granular"
+                android:textSize="11dp" />
+
+        </LinearLayout>
 
         <TextView
             android:layout_width="match_parent"
@@ -181,34 +173,41 @@
 
         </LinearLayout>
 
-        <Button
-            android:id="@+id/btnSubmit"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:clickable="true"
-            android:text="Submit"
-            android:textSize="16dp"
-            android:visibility="invisible" />
+            android:layout_height="50dp"
+            android:orientation="horizontal">
 
-        <Button
-            android:id="@+id/btnAnalyse"
-            android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:clickable="true"
-            android:text="Analyse"
-            android:textSize="16dp"
-            android:backgroundTint="@color/colorSecondaryVariant"
-            android:textColor="@color/black" />
+            <Button
+                android:id="@+id/btnSubmit"
+                android:layout_width="120dp"
+                android:layout_height="40dp"
+                android:clickable="true"
+                android:text="Submit"
+                android:textSize="16dp"
+                android:visibility="invisible" />
 
-        <Button
-            android:id="@+id/btnDelete"
-            android:layout_width="250dp"
-            android:layout_height="40dp"
-            android:backgroundTint="#9AE91E1E"
-            android:clickable="true"
-            android:textSize="16dp"
-            android:text="Delete"
-            android:visibility="invisible" />
+            <Button
+                android:id="@+id/btnAnalyse"
+                android:layout_width="120dp"
+                android:layout_height="40dp"
+                android:clickable="true"
+                android:text="Analyse"
+                android:textSize="16dp"
+                android:backgroundTint="@color/colorSecondaryVariant"
+                android:textColor="@color/black" />
+
+            <Button
+                android:id="@+id/btnDelete"
+                android:layout_width="120dp"
+                android:layout_height="40dp"
+                android:backgroundTint="#9AE91E1E"
+                android:clickable="true"
+                android:textSize="16dp"
+                android:text="Delete"
+                android:visibility="invisible" />
+
+        </LinearLayout>
 
     </LinearLayout>
 
@@ -218,7 +217,7 @@
         android:layout_height="50dp"
         app:fabCustomSize="50dp"
         android:layout_marginEnd="50dp"
-        android:layout_marginBottom="15dp"
+        android:layout_marginBottom="35dp"
         android:backgroundTint="@color/colorSecondaryVariant"
         android:clickable="true"
         android:tint="@color/black"

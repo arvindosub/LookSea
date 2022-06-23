@@ -62,36 +62,16 @@ open class HomeActivity : AppCompatActivity() {
                     .orderBy("creation_time_ms", Query.Direction.DESCENDING)
 
                 val username = intent.getStringExtra(EXTRA_USERNAME)
-                // supportActionBar?.title = username
-                //filter out posts not from self or friends in home page
-                //
+                Log.i(TAG, "username: $username")
                 if (username != null) {
-                    postsReference = postsReference.whereEqualTo("user.username", username)
-
-                    postsReference.addSnapshotListener { snapshot, exception ->
-                        if (exception != null || snapshot == null) {
-                            Log.e(TAG, "Exception when querying posts", exception)
-                            return@addSnapshotListener
-                        }
-                        val postList = snapshot.toObjects(Post::class.java)
-                        var postIdList = mutableListOf<String>()
-                        snapshot.forEach { doc ->
-                            var myPost = doc.toObject(Post::class.java)
-                            if (myPost.privacy == "public") {
-                                postIdList.add(doc.id)
-                            }
-                        }
-                        posts.clear()
-                        posts.addAll(postList)
-                        postIds.clear()
-                        postIds.addAll(postIdList)
-                        adapter.notifyDataSetChanged()
-                    }
-
+                    postsReference = postsReference.whereEqualTo("username", username)
+                    // username is always null
                 } else {
                     var friendList: MutableList<String> = ArrayList()
-                    var readList: MutableList<String> = ArrayList()
+                    var fofList: MutableList<String> = ArrayList()
+                    var granularReadList: MutableList<String> = ArrayList()
                     friendList.add(userId!!)
+
                     firestoreDb.collection("links")
                         .document(userId as String)
                         .collection("friend")
@@ -101,8 +81,18 @@ open class HomeActivity : AppCompatActivity() {
                                 if (fr != null) {
                                     friendList.add(fr.id)
                                 }
+                                firestoreDb.collection("links")
+                                    .document(fr.id as String)
+                                    .collection("friend")
+                                    .get()
+                                    .addOnSuccessListener { fofs ->
+                                        fofs.forEach { fof ->
+                                            if (fof != null) {
+                                                fofList.add(fof.id)
+                                            }
+                                        }
+                                    }
                             }
-                            Log.i(TAG, "Friends List: $friendList")
 
                             firestoreDb.collection("links")
                                 .document(userId as String)
@@ -111,11 +101,14 @@ open class HomeActivity : AppCompatActivity() {
                                 .addOnSuccessListener { readDocs ->
                                     readDocs.forEach { rd ->
                                         if (rd != null) {
-                                            readList.add(rd.id)
+                                            granularReadList.add(rd.id)
                                         }
                                     }
 
-                                    // postsReference = postsReference.whereIn("user", friendList)
+                                    Log.i(TAG, "Friends List: $friendList")
+                                    Log.i(TAG, "FoF List: $fofList")
+                                    Log.i(TAG, "Granular Read List: $granularReadList")
+
                                     postsReference.addSnapshotListener { snapshot, exception ->
                                         if (exception != null || snapshot == null) {
                                             Log.e(TAG, "Exception when querying posts", exception)
@@ -125,10 +118,37 @@ open class HomeActivity : AppCompatActivity() {
                                         var postIdList = mutableListOf<String>()
                                         snapshot.forEach { doc ->
                                             var myPost = doc.toObject(Post::class.java)
-                                            if (myPost.privacy == "public" || myPost.userId in friendList || doc.id in readList) {
+                                            Log.i(TAG, "Post ID: ${doc.id}")
+                                            Log.i(TAG, "Post: $myPost")
+                                            if (myPost.privacy!!.contains("/pub2") || myPost.privacy!!.contains("/pub3") || myPost.privacy!!.contains("/pub4")) {
+                                                if (doc.id !in postIdList) {
+                                                    postList.add(myPost)
+                                                    postIdList.add(doc.id)
+                                                }
+                                            }
+                                            Log.i(TAG, "1 Post ID List: $postIdList")
+
+                                            if (myPost.privacy!!.contains("/frds2") || myPost.privacy!!.contains("/frds3") || myPost.privacy!!.contains("/frds4")) {
+                                                if (myPost.userId in friendList && doc.id !in postIdList) {
+                                                    postList.add(myPost)
+                                                    postIdList.add(doc.id)
+                                                }
+                                            }
+                                            Log.i(TAG, "2 Post ID List: $postIdList")
+
+                                            if (myPost.privacy!!.contains("/fof2") || myPost.privacy!!.contains("/fof3") || myPost.privacy!!.contains("/fof4")) {
+                                                if (myPost.userId in fofList && doc.id !in postIdList) {
+                                                    postList.add(myPost)
+                                                    postIdList.add(doc.id)
+                                                }
+                                            }
+                                            Log.i(TAG, "3 Post ID List: $postIdList")
+
+                                            if (doc.id in granularReadList && doc.id !in postIdList) {
                                                 postList.add(myPost)
                                                 postIdList.add(doc.id)
                                             }
+                                            Log.i(TAG, "4 Post ID List: $postIdList")
                                         }
                                         posts.clear()
                                         posts.addAll(postList)

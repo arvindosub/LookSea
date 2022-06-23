@@ -25,7 +25,7 @@ class AccessActivity : AppCompatActivity() {
     private lateinit var search: MutableList<Item>
     private lateinit var adapterSearch: ItemAdapter
     private var searchList = mutableListOf<Item>()
-    private var idList = mutableListOf<String>()
+    private var searchIdList = mutableListOf<String>()
     private var usernameList = mutableListOf<String>()
     private var selUserId: String? = ""
 
@@ -50,74 +50,500 @@ class AccessActivity : AppCompatActivity() {
                 signedInUser = userSnapshot.toObject(User::class.java)
                 Log.i(TAG, "Signed-In User: $signedInUser")
 
-                binding.etSearch.addTextChangedListener {
-                    if (it.toString() == "") {
-                        searchList.clear()
-                        idList.clear()
-                        search.clear()
-                        adapterSearch.notifyDataSetChanged()
-                    } else if (it.toString().contains("/friendswith ")) {
-                        searchList.clear()
-                        idList.clear()
-                        var searchTerm = it.toString().split(' ')[1]
-                        firestoreDb.collection("artifacts")
-                            .whereEqualTo("type", "user")
-                            .whereEqualTo("username", searchTerm)
+                var friendList: MutableList<String> = ArrayList()
+                var fofList: MutableList<String> = ArrayList()
+                var granularReadList: MutableList<String> = ArrayList()
+                friendList.add(userId!!)
+
+                firestoreDb.collection("links")
+                    .document(userId as String)
+                    .collection("friend")
+                    .get()
+                    .addOnSuccessListener { friends ->
+                        friends.forEach { fr ->
+                            if (fr != null) {
+                                friendList.add(fr.id)
+                            }
+                            firestoreDb.collection("links")
+                                .document(fr.id as String)
+                                .collection("friend")
+                                .get()
+                                .addOnSuccessListener { fofs ->
+                                    fofs.forEach { fof ->
+                                        if (fof != null) {
+                                            fofList.add(fof.id)
+                                        }
+                                    }
+                                }
+                        }
+
+                        firestoreDb.collection("links")
+                            .document(userId as String)
+                            .collection("read")
                             .get()
-                            .addOnSuccessListener { userSnapshots ->
-                                var searchUser = ""
-                                userSnapshots.forEach { doc ->
-                                    searchUser = doc.id
+                            .addOnSuccessListener { readDocs ->
+                                readDocs.forEach { rd ->
+                                    if (rd != null) {
+                                        granularReadList.add(rd.id)
+                                    }
                                 }
 
-                                if (searchUser != "") {
-                                    firestoreDb.collection("links")
-                                        .document(searchUser)
-                                        .collection("friend")
-                                        .get()
-                                        .addOnSuccessListener { querySnapshots ->
-                                            querySnapshots.forEach { doc ->
-                                                idList.add(doc.id)
+                                Log.i(TAG, "Friends List: $friendList")
+                                Log.i(TAG, "FoF List: $fofList")
+                                Log.i(TAG, "Granular Read List: $granularReadList")
+
+                                binding.etSearch.addTextChangedListener {
+                                    if (it.toString() == "") {
+                                        searchList.clear()
+                                        searchIdList.clear()
+                                        search.clear()
+                                        adapterSearch.notifyDataSetChanged()
+                                    } else if (it.toString().contains("/friendswith ")) {
+                                        searchList.clear()
+                                        searchIdList.clear()
+                                        var searchTerm = it.toString().split(' ')[1]
+                                        firestoreDb.collection("artifacts")
+                                            .whereEqualTo("type", "user")
+                                            .whereEqualTo("username", searchTerm)
+                                            .get()
+                                            .addOnSuccessListener { userSnapshots ->
+                                                var searchUser = ""
+                                                userSnapshots.forEach { docUser ->
+                                                    searchUser = docUser.id
+                                                }
+
+                                                if (searchUser != "") {
+                                                    firestoreDb.collection("links")
+                                                        .document(searchUser)
+                                                        .collection("friend")
+                                                        .get()
+                                                        .addOnSuccessListener { querySnapshots ->
+                                                            var idList = mutableListOf<String>()
+                                                            querySnapshots.forEach { docIds ->
+                                                                idList.add(docIds.id)
+                                                            }
+
+                                                            if (idList != null) {
+                                                                firestoreDb.collection("artifacts")
+                                                                    .whereIn(
+                                                                        FieldPath.documentId(),
+                                                                        idList
+                                                                    )
+                                                                    .whereIn("type", mutableListOf("user"))
+                                                                    .get()
+                                                                    .addOnSuccessListener { friendSnapshots ->
+                                                                        friendSnapshots.forEach { doc ->
+                                                                            var myPost =
+                                                                                doc.toObject(
+                                                                                    Item::class.java
+                                                                                )
+                                                                            Log.i(
+                                                                                TAG,
+                                                                                "Post ID: ${doc.id}"
+                                                                            )
+                                                                            Log.i(
+                                                                                TAG,
+                                                                                "Post: $myPost"
+                                                                            )
+
+                                                                            if ((myPost.privacy!!.contains(
+                                                                                    "/pub2"
+                                                                                )) || (myPost.privacy!!.contains(
+                                                                                    "/pub3"
+                                                                                )) || (myPost.privacy!!.contains(
+                                                                                    "/pub4"
+                                                                                ))
+                                                                            ) {
+                                                                                if (doc.id !in searchIdList) {
+                                                                                    searchList.add(
+                                                                                        myPost
+                                                                                    )
+                                                                                    searchIdList.add(
+                                                                                        doc.id
+                                                                                    )
+                                                                                    usernameList.add(myPost.username.toString())
+                                                                                }
+                                                                            }
+
+                                                                            if ((myPost.privacy!!.contains(
+                                                                                    "/frds2"
+                                                                                )) || (myPost.privacy!!.contains(
+                                                                                    "/frds3"
+                                                                                )) || (myPost.privacy!!.contains(
+                                                                                    "/frds4"
+                                                                                ))
+                                                                            ) {
+                                                                                if ((myPost.userId in friendList || doc.id in friendList) && doc.id !in searchIdList) {
+                                                                                    searchList.add(
+                                                                                        myPost
+                                                                                    )
+                                                                                    searchIdList.add(
+                                                                                        doc.id
+                                                                                    )
+                                                                                    usernameList.add(myPost.username.toString())
+                                                                                }
+                                                                            }
+
+                                                                            if ((myPost.privacy!!.contains(
+                                                                                    "/fof2"
+                                                                                )) || (myPost.privacy!!.contains(
+                                                                                    "/fof3"
+                                                                                )) || (myPost.privacy!!.contains(
+                                                                                    "/fof4"
+                                                                                ))
+                                                                            ) {
+                                                                                if ((myPost.userId in fofList || doc.id in fofList) && doc.id !in searchIdList) {
+                                                                                    searchList.add(
+                                                                                        myPost
+                                                                                    )
+                                                                                    searchIdList.add(
+                                                                                        doc.id
+                                                                                    )
+                                                                                    usernameList.add(myPost.username.toString())
+                                                                                }
+                                                                            }
+
+                                                                            if (doc.id in granularReadList && doc.id !in searchIdList) {
+                                                                                searchList.add(
+                                                                                    myPost
+                                                                                )
+                                                                                searchIdList.add(doc.id)
+                                                                                usernameList.add(myPost.username.toString())
+                                                                            }
+                                                                        }
+                                                                        search.clear()
+                                                                        search.addAll(searchList)
+                                                                        adapterSearch.notifyDataSetChanged()
+                                                                        Log.i(TAG, "zz $searchList")
+                                                                    }
+                                                            }
+                                                        }
+                                                }
                                             }
+                                    } else if (it.toString().contains("/likedby ")) {
+                                        searchList.clear()
+                                        searchIdList.clear()
+                                        var searchTerm = it.toString().split(' ')[1]
+                                        firestoreDb.collection("artifacts")
+                                            .whereEqualTo("type", "user")
+                                            .whereEqualTo("username", searchTerm)
+                                            .get()
+                                            .addOnSuccessListener { userSnapshots ->
+                                                var searchUser = ""
+                                                userSnapshots.forEach { docUser ->
+                                                    searchUser = docUser.id
+                                                }
+
+                                                if (searchUser != "") {
+                                                    firestoreDb.collection("links")
+                                                        .document(searchUser)
+                                                        .collection("liked")
+                                                        .get()
+                                                        .addOnSuccessListener { querySnapshots ->
+                                                            var idList = mutableListOf<String>()
+                                                            querySnapshots.forEach { docIds ->
+                                                                idList.add(docIds.id)
+                                                            }
+                                                            if (idList != null) {
+                                                                firestoreDb.collection("artifacts")
+                                                                    .whereIn(
+                                                                        FieldPath.documentId(),
+                                                                        idList
+                                                                    )
+                                                                    .whereIn("type", mutableListOf("user"))
+                                                                    .get()
+                                                                    .addOnSuccessListener { docSnapshots ->
+                                                                        docSnapshots.forEach { doc ->
+                                                                            var myPost =
+                                                                                doc.toObject(
+                                                                                    Item::class.java
+                                                                                )
+                                                                            Log.i(
+                                                                                TAG,
+                                                                                "Post ID: ${doc.id}"
+                                                                            )
+                                                                            Log.i(
+                                                                                TAG,
+                                                                                "Post: $myPost"
+                                                                            )
+                                                                            if ((myPost.privacy!!.contains(
+                                                                                    "/pub2"
+                                                                                )) || (myPost.privacy!!.contains(
+                                                                                    "/pub3"
+                                                                                )) || (myPost.privacy!!.contains(
+                                                                                    "/pub4"
+                                                                                ))
+                                                                            ) {
+                                                                                if (doc.id !in searchIdList) {
+                                                                                    searchList.add(
+                                                                                        myPost
+                                                                                    )
+                                                                                    searchIdList.add(
+                                                                                        doc.id
+                                                                                    )
+                                                                                    usernameList.add(myPost.username.toString())
+                                                                                }
+                                                                            }
+
+                                                                            if ((myPost.privacy!!.contains(
+                                                                                    "/frds2"
+                                                                                )) || (myPost.privacy!!.contains(
+                                                                                    "/frds3"
+                                                                                )) || (myPost.privacy!!.contains(
+                                                                                    "/frds4"
+                                                                                ))
+                                                                            ) {
+                                                                                if ((myPost.userId in friendList || doc.id in friendList) && doc.id !in searchIdList) {
+                                                                                    searchList.add(
+                                                                                        myPost
+                                                                                    )
+                                                                                    searchIdList.add(
+                                                                                        doc.id
+                                                                                    )
+                                                                                    usernameList.add(myPost.username.toString())
+                                                                                }
+                                                                            }
+
+                                                                            if ((myPost.privacy!!.contains(
+                                                                                    "/fof2"
+                                                                                )) || (myPost.privacy!!.contains(
+                                                                                    "/fof3"
+                                                                                )) || (myPost.privacy!!.contains(
+                                                                                    "/fof4"
+                                                                                ))
+                                                                            ) {
+                                                                                if ((myPost.userId in fofList || doc.id in fofList) && doc.id !in searchIdList) {
+                                                                                    searchList.add(
+                                                                                        myPost
+                                                                                    )
+                                                                                    searchIdList.add(
+                                                                                        doc.id
+                                                                                    )
+                                                                                    usernameList.add(myPost.username.toString())
+                                                                                }
+                                                                            }
+
+                                                                            if (doc.id in granularReadList && doc.id !in searchIdList) {
+                                                                                searchList.add(
+                                                                                    myPost
+                                                                                )
+                                                                                searchIdList.add(doc.id)
+                                                                                usernameList.add(myPost.username.toString())
+                                                                            }
+                                                                        }
+                                                                        search.clear()
+                                                                        search.addAll(searchList)
+                                                                        adapterSearch.notifyDataSetChanged()
+                                                                        Log.i(TAG, "zz $searchList")
+                                                                    }
+                                                            }
+                                                        }
+                                                }
+                                            }
+                                    } else if (it.toString()[0].toString() == "/" && it.toString().contains(" ")) {
+                                        searchList.clear()
+                                        searchIdList.clear()
+                                        var searchType = it.toString().split(' ')[0].drop(1)
+                                        var searchTerm = it.toString().split(' ')[1]
+                                        if (searchType == "user") {
                                             firestoreDb.collection("artifacts")
-                                                .whereIn(FieldPath.documentId(), idList)
+                                                .whereIn("type", mutableListOf(searchType))
+                                                .whereGreaterThanOrEqualTo("username", searchTerm)
                                                 .get()
-                                                .addOnSuccessListener { friendSnapshots ->
-                                                    searchList = friendSnapshots.toObjects((Item::class.java))
+                                                .addOnSuccessListener { querySnapshots ->
+                                                    querySnapshots.forEach { doc ->
+                                                        var myPost = doc.toObject(
+                                                            Item::class.java)
+                                                        Log.i(TAG, "Post ID: ${doc.id}")
+                                                        Log.i(TAG, "Post: $myPost")
+                                                        if ((myPost.privacy!!.contains("/pub2")) || (myPost.privacy!!.contains("/pub3")) || (myPost.privacy!!.contains("/pub4"))) {
+                                                            if (doc.id !in searchIdList) {
+                                                                searchList.add(myPost)
+                                                                searchIdList.add(doc.id)
+                                                                usernameList.add(myPost.username.toString())
+                                                            }
+                                                        }
+
+                                                        if ((myPost.privacy!!.contains("/frds2")) || (myPost.privacy!!.contains("/frds3")) || (myPost.privacy!!.contains("/frds4"))) {
+                                                            if ((myPost.userId in friendList || doc.id in friendList) && doc.id !in searchIdList) {
+                                                                searchList.add(myPost)
+                                                                searchIdList.add(doc.id)
+                                                                usernameList.add(myPost.username.toString())
+                                                            }
+                                                        }
+
+                                                        if ((myPost.privacy!!.contains("/fof2")) || (myPost.privacy!!.contains("/fof3")) || (myPost.privacy!!.contains("/fof4"))) {
+                                                            if ((myPost.userId in fofList || doc.id in fofList) && doc.id !in searchIdList) {
+                                                                searchList.add(myPost)
+                                                                searchIdList.add(doc.id)
+                                                                usernameList.add(myPost.username.toString())
+                                                            }
+                                                        }
+
+                                                        if (doc.id in granularReadList && doc.id !in searchIdList) {
+                                                            searchList.add(myPost)
+                                                            searchIdList.add(doc.id)
+                                                            usernameList.add(myPost.username.toString())
+                                                        }
+                                                    }
                                                     search.clear()
                                                     search.addAll(searchList)
                                                     adapterSearch.notifyDataSetChanged()
                                                     Log.i(TAG, "zz $searchList")
                                                 }
+                                        } else if (searchTerm != "") {
+                                            searchList.clear()
+                                            firestoreDb.collection("artifacts")
+                                                .whereIn("type", mutableListOf("user"))
+                                                .get()
+                                                .addOnSuccessListener { querySnapshots ->
+                                                    querySnapshots.forEach { doc ->
+                                                        var myPost = doc.toObject(Item::class.java)
+                                                        var descList = doc.toObject((Item::class.java)).description.split(' ')
+                                                        Log.i(TAG, "Post ID: ${doc.id}")
+                                                        Log.i(TAG, "Post: $myPost")
+                                                        if ((myPost.privacy!!.contains("/pub2")) || (myPost.privacy!!.contains("/pub3")) || (myPost.privacy!!.contains("/pub4"))) {
+                                                            if (doc.id !in searchIdList) {
+                                                                for (desc in descList) {
+                                                                    if ((desc.contains(searchTerm, ignoreCase = true)) && (doc.id !in searchIdList)) {
+                                                                        searchList.add(myPost)
+                                                                        searchIdList.add(doc.id)
+                                                                        usernameList.add(myPost.username.toString())
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
 
+                                                        if ((myPost.privacy!!.contains("/frds2")) || (myPost.privacy!!.contains("/frds3")) || (myPost.privacy!!.contains("/frds4"))) {
+                                                            if ((myPost.userId in friendList || doc.id in friendList) && doc.id !in searchIdList) {
+                                                                for (desc in descList) {
+                                                                    if ((desc.contains(searchTerm, ignoreCase = true)) && (doc.id !in searchIdList)) {
+                                                                        searchList.add(myPost)
+                                                                        searchIdList.add(doc.id)
+                                                                        usernameList.add(myPost.username.toString())
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+
+                                                        if ((myPost.privacy!!.contains("/fof2")) || (myPost.privacy!!.contains("/fof3")) || (myPost.privacy!!.contains("/fof4"))) {
+                                                            if ((myPost.userId in fofList || doc.id in fofList) && doc.id !in searchIdList) {
+                                                                for (desc in descList) {
+                                                                    if ((desc.contains(searchTerm, ignoreCase = true)) && (doc.id !in searchIdList)) {
+                                                                        searchList.add(myPost)
+                                                                        searchIdList.add(doc.id)
+                                                                        usernameList.add(myPost.username.toString())
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+
+                                                        if (doc.id in granularReadList && doc.id !in searchIdList) {
+                                                            for (desc in descList) {
+                                                                if ((desc.contains(searchTerm, ignoreCase = true)) && (doc.id !in searchIdList)) {
+                                                                    searchList.add(myPost)
+                                                                    searchIdList.add(doc.id)
+                                                                    usernameList.add(myPost.username.toString())
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    search.clear()
+                                                    search.addAll(searchList)
+                                                    adapterSearch.notifyDataSetChanged()
+                                                    Log.i(TAG, "zz $searchList")
+                                                }
                                         }
-                                }
-                            }
-                    } else {
-                        searchList.clear()
-                        idList.clear()
-                        firestoreDb.collection("artifacts")
-                            .whereEqualTo("type", "user")
-                            .get()
-                            .addOnSuccessListener { querySnapshots ->
-                                querySnapshots.forEach { doc ->
-                                    var queryItem = doc.toObject((Item::class.java))
-                                    if (queryItem.username.toString().contains(it.toString(), ignoreCase = true) && !searchList.contains(doc.toObject((Item::class.java)))) {
-                                        searchList.add(queryItem)
-                                        idList.add(doc.id)
-                                        usernameList.add(queryItem.username.toString())
+                                    } else {
+                                        searchList.clear()
+                                        searchIdList.clear()
+                                        firestoreDb.collection("artifacts").whereIn("type", mutableListOf("user"))
+                                            .get()
+                                            .addOnSuccessListener { querySnapshots ->
+                                                querySnapshots.forEach { doc ->
+                                                    var myPost = doc.toObject(Item::class.java)
+                                                    var descList = doc.toObject((Item::class.java)).description.split(' ')
+                                                    Log.i(TAG, "Post ID: ${doc.id}")
+                                                    Log.i(TAG, "Post: $myPost")
+                                                    if ((myPost.privacy!!.contains("/pub2")) || (myPost.privacy!!.contains("/pub3")) || (myPost.privacy!!.contains("/pub4"))) {
+                                                        if (doc.id !in searchIdList) {
+                                                            for (desc in descList) {
+                                                                if ((desc.contains(it.toString(), ignoreCase = true)) && (doc.id !in searchIdList)) {
+                                                                    searchList.add(myPost)
+                                                                    searchIdList.add(doc.id)
+                                                                    usernameList.add(myPost.username.toString())
+                                                                }
+                                                            }
+                                                            if ((myPost.username.toString().contains(it.toString(), ignoreCase = true)) && (doc.id !in searchIdList)) {
+                                                                searchList.add(myPost)
+                                                                searchIdList.add(doc.id)
+                                                                usernameList.add(myPost.username.toString())
+                                                            }
+                                                        }
+                                                    }
+
+                                                    if ((myPost.privacy!!.contains("/frds2")) || (myPost.privacy!!.contains("/frds3")) || (myPost.privacy!!.contains("/frds4"))) {
+                                                        if ((myPost.userId in friendList || doc.id in friendList) && doc.id !in searchIdList) {
+                                                            for (desc in descList) {
+                                                                if ((desc.contains(it.toString(), ignoreCase = true)) && (doc.id !in searchIdList)) {
+                                                                    searchList.add(myPost)
+                                                                    searchIdList.add(doc.id)
+                                                                    usernameList.add(myPost.username.toString())
+                                                                }
+                                                            }
+                                                            if ((myPost.username.toString().contains(it.toString(), ignoreCase = true)) && (doc.id !in searchIdList)) {
+                                                                searchList.add(myPost)
+                                                                searchIdList.add(doc.id)
+                                                                usernameList.add(myPost.username.toString())
+                                                            }
+                                                        }
+                                                    }
+
+                                                    if ((myPost.privacy!!.contains("/fof2")) || (myPost.privacy!!.contains("/fof3")) || (myPost.privacy!!.contains("/fof4"))) {
+                                                        if ((myPost.userId in fofList || doc.id in fofList) && doc.id !in searchIdList) {
+                                                            for (desc in descList) {
+                                                                if ((desc.contains(it.toString(), ignoreCase = true)) && (doc.id !in searchIdList)) {
+                                                                    searchList.add(myPost)
+                                                                    searchIdList.add(doc.id)
+                                                                    usernameList.add(myPost.username.toString())
+                                                                }
+                                                            }
+                                                            if ((myPost.username.toString().contains(it.toString(), ignoreCase = true)) && (doc.id !in searchIdList)) {
+                                                                searchList.add(myPost)
+                                                                searchIdList.add(doc.id)
+                                                                usernameList.add(myPost.username.toString())
+                                                            }
+                                                        }
+                                                    }
+
+                                                    if (doc.id in granularReadList && doc.id !in searchIdList) {
+                                                        for (desc in descList) {
+                                                            if ((desc.contains(it.toString(), ignoreCase = true)) && (doc.id !in searchIdList)) {
+                                                                searchList.add(myPost)
+                                                                searchIdList.add(doc.id)
+                                                                usernameList.add(myPost.username.toString())
+                                                            }
+                                                        }
+                                                        if ((myPost.username.toString().contains(it.toString(), ignoreCase = true)) && (doc.id !in searchIdList)) {
+                                                            searchList.add(myPost)
+                                                            searchIdList.add(doc.id)
+                                                            usernameList.add(myPost.username.toString())
+                                                        }
+                                                    }
+                                                }
+                                                search.clear()
+                                                search.addAll(searchList)
+                                                adapterSearch.notifyDataSetChanged()
+                                                Log.i(TAG, "zz $searchList")
+                                                Log.i(TAG, "zz $searchIdList")
+                                            }
                                     }
                                 }
-                                search.clear()
-                                search.addAll(searchList)
-                                adapterSearch.notifyDataSetChanged()
-                                Log.i(TAG, "zz $searchList")
                             }
                     }
-                }
                 adapterSearch.setOnItemClickListener(object : ItemAdapter.onItemClickListener {
                     override fun onItemClick(position: Int) {
-                        selUserId = idList[position]
+                        selUserId = searchIdList[position]
                         binding.tvSelectedUser.setText(usernameList[position])
                         Log.i(TAG, "${usernameList[position]}")
                     }
@@ -136,11 +562,17 @@ class AccessActivity : AppCompatActivity() {
     private fun handleSubmitButtonClick() {
         binding.btnSubmit.isEnabled = false
         var artifactId = intent.getStringExtra(EXTRA_ARTIFACTID)
+        if (artifactId == null) {
+            artifactId = userId.toString()
+        }
+        Log.i(TAG, "$artifactId")
         var accessCode = binding.etAccessCode.text.toString()
         accessCode = accessCode.replace("\\s".toRegex(), "")
         var codeList = accessCode.split('/')
         Log.i(TAG, "$codeList")
 
+        firestoreDb.collection("links").document(selUserId as String)
+            .collection("ban").document(artifactId as String).delete()
         firestoreDb.collection("links").document(selUserId as String)
             .collection("read").document(artifactId as String).delete()
         firestoreDb.collection("links").document(selUserId as String)
@@ -148,8 +580,12 @@ class AccessActivity : AppCompatActivity() {
         firestoreDb.collection("links").document(selUserId as String)
             .collection("delete").document(artifactId as String).delete()
         firestoreDb.collection("links").document(selUserId as String)
-            .collection("config").document(artifactId as String).delete()
+            .collection("configure").document(artifactId as String).delete()
 
+        if ("ban" in codeList) {
+            firestoreDb.collection("links").document(selUserId as String)
+                .collection("ban").document(artifactId as String).set(Link("ban", "$userId"))
+        }
         if ("read" in codeList) {
             firestoreDb.collection("links").document(selUserId as String)
                 .collection("read").document(artifactId as String).set(Link("read", "$userId"))

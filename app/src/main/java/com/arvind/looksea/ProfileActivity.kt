@@ -30,11 +30,12 @@ class ProfileActivity : AppCompatActivity() {
     private lateinit var binding: ActivityProfileBinding
 
     private lateinit var images: MutableList<Post>
+    private lateinit var imageIds: MutableList<String>
     private lateinit var adapterImages: FileAdapter
-    private lateinit var imageList: MutableList<Post>
     private lateinit var imageGridView: GridView
-    private fun loadImages() {
+    private fun loadImages(friendlist: MutableList<String> = ArrayList(), foflist: MutableList<String> = ArrayList(), granularreadlist: MutableList<String> = ArrayList()) {
         images = mutableListOf()
+        imageIds = mutableListOf()
         imageGridView = binding.gvImages
         adapterImages = FileAdapter(this, images)
         imageGridView.adapter = adapterImages
@@ -42,48 +43,61 @@ class ProfileActivity : AppCompatActivity() {
         firestoreDb.collection("artifacts").whereEqualTo("user", currUserId)
             .whereEqualTo("type", "image")
             .get()
-            .addOnSuccessListener { myPosts ->
-                imageList = myPosts.toObjects((Post::class.java))
-                Log.i(TAG, "$imageList")
+            .addOnSuccessListener { myImages ->
+                var imgList = mutableListOf<Post>()
+                var imgIdList = mutableListOf<String>()
+                myImages.forEach { doc ->
+                    var myPost = doc.toObject(Post::class.java)
+                    Log.i(TAG, "Post ID: ${doc.id}")
+                    Log.i(TAG, "Post: $myPost")
+                    if ((myPost.privacy!!.contains("/pub2")) || (myPost.privacy!!.contains("/pub3")) || (myPost.privacy!!.contains("/pub4"))) {
+                        if (doc.id !in imgIdList) {
+                            imgList.add(myPost)
+                            imgIdList.add(doc.id)
+                        }
+                    }
+
+                    if ((myPost.privacy!!.contains("/frds2")) || (myPost.privacy!!.contains("/frds3")) || (myPost.privacy!!.contains("/frds4"))) {
+                        if (myPost.userId in friendlist && doc.id !in imgIdList) {
+                            imgList.add(myPost)
+                            imgIdList.add(doc.id)
+                        }
+                    }
+
+                    if ((myPost.privacy!!.contains("/fof2")) || (myPost.privacy!!.contains("/fof3")) || (myPost.privacy!!.contains("/fof4"))) {
+                        if (myPost.userId in foflist && doc.id !in imgIdList) {
+                            imgList.add(myPost)
+                            imgIdList.add(doc.id)
+                        }
+                    }
+
+                    if (doc.id in granularreadlist && doc.id !in imgIdList) {
+                        imgList.add(myPost)
+                        imgIdList.add(doc.id)
+                    }
+                }
                 images.clear()
-                images.addAll(imageList)
+                images.addAll(imgList)
+                imageIds.clear()
+                imageIds.addAll(imgIdList)
                 adapterImages.notifyDataSetChanged()
 
                 imageGridView.onItemClickListener =
                     AdapterView.OnItemClickListener { _, _, position, _ ->
-                        if (images[position].privacy == "public" || images[position].userId == userId) {
-                            val intent = Intent(this@ProfileActivity, PostActivity::class.java)
-                            intent.putExtra(EXTRA_POSTTIME, images[position].creationTimeMs.toString())
-                            startActivity(intent)
-                        } else {
-                            firestoreDb.collection("links")
-                                .document(images[position].userId as String)
-                                .collection("friend")
-                                .get()
-                                .addOnSuccessListener { friendSnapshots ->
-                                    var allFriends = mutableListOf<String>()
-                                    friendSnapshots.forEach { doc ->
-                                        allFriends.add(doc.id)
-                                    }
-                                    if (userId in allFriends) {
-                                        val intent = Intent(this@ProfileActivity, PostActivity::class.java)
-                                        intent.putExtra(EXTRA_POSTTIME, images[position].creationTimeMs.toString())
-                                        startActivity(intent)
-                                    } else {
-                                        Toast.makeText(this@ProfileActivity, "You do not have access to view this post!", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                        }
+                        val intent = Intent(this@ProfileActivity, PostActivity::class.java)
+                        intent.putExtra(EXTRA_POSTTIME, images[position].creationTimeMs.toString())
+                        startActivity(intent)
                     }
             }
     }
 
     private lateinit var videos: MutableList<Post>
+    private lateinit var videoIds: MutableList<String>
     private lateinit var adapterVideos: FileAdapter
-    private lateinit var videoList: MutableList<Post>
     private lateinit var videoGridView: GridView
-    private fun loadVideos() {
+    private fun loadVideos(friendlist: MutableList<String> = ArrayList(), foflist: MutableList<String> = ArrayList(), granularreadlist: MutableList<String> = ArrayList()) {
         videos = mutableListOf()
+        videoIds = mutableListOf()
         videoGridView = binding.gvVideos
         adapterVideos = FileAdapter(this, videos)
         videoGridView.adapter = adapterVideos
@@ -91,48 +105,61 @@ class ProfileActivity : AppCompatActivity() {
         firestoreDb.collection("artifacts").whereEqualTo("user", currUserId)
             .whereEqualTo("type", "video")
             .get()
-            .addOnSuccessListener { myPosts ->
-                videoList = myPosts.toObjects((Post::class.java))
-                Log.i(TAG, "$videoList")
+            .addOnSuccessListener { myImages ->
+                var vidList = mutableListOf<Post>()
+                var vidIdList = mutableListOf<String>()
+                myImages.forEach { doc ->
+                    var myPost = doc.toObject(Post::class.java)
+                    Log.i(TAG, "Post ID: ${doc.id}")
+                    Log.i(TAG, "Post: $myPost")
+                    if ((myPost.privacy!!.contains("/pub2")) || (myPost.privacy!!.contains("/pub3")) || (myPost.privacy!!.contains("/pub4"))) {
+                        if (doc.id !in vidIdList) {
+                            vidList.add(myPost)
+                            vidIdList.add(doc.id)
+                        }
+                    }
+
+                    if ((myPost.privacy!!.contains("/frds2")) || (myPost.privacy!!.contains("/frds3")) || (myPost.privacy!!.contains("/frds4"))) {
+                        if (myPost.userId in friendlist && doc.id !in vidIdList) {
+                            vidList.add(myPost)
+                            vidIdList.add(doc.id)
+                        }
+                    }
+
+                    if ((myPost.privacy!!.contains("/fof2")) || (myPost.privacy!!.contains("/fof3")) || (myPost.privacy!!.contains("/fof4"))) {
+                        if (myPost.userId in foflist && doc.id !in vidIdList) {
+                            vidList.add(myPost)
+                            vidIdList.add(doc.id)
+                        }
+                    }
+
+                    if (doc.id in granularreadlist && doc.id !in vidIdList) {
+                        vidList.add(myPost)
+                        vidIdList.add(doc.id)
+                    }
+                }
                 videos.clear()
-                videos.addAll(videoList)
+                videos.addAll(vidList)
+                videoIds.clear()
+                videoIds.addAll(vidIdList)
                 adapterVideos.notifyDataSetChanged()
 
                 videoGridView.onItemClickListener =
                     AdapterView.OnItemClickListener { _, _, position, _ ->
-                        if (videos[position].privacy == "public" || videos[position].userId == userId) {
-                            val intent = Intent(this@ProfileActivity, PostActivity::class.java)
-                            intent.putExtra(EXTRA_POSTTIME, videos[position].creationTimeMs.toString())
-                            startActivity(intent)
-                        } else {
-                            firestoreDb.collection("links")
-                                .document(videos[position].userId as String)
-                                .collection("friend")
-                                .get()
-                                .addOnSuccessListener { friendSnapshots ->
-                                    var allFriends = mutableListOf<String>()
-                                    friendSnapshots.forEach { doc ->
-                                        allFriends.add(doc.id)
-                                    }
-                                    if (userId in allFriends) {
-                                        val intent = Intent(this@ProfileActivity, PostActivity::class.java)
-                                        intent.putExtra(EXTRA_POSTTIME, videos[position].creationTimeMs.toString())
-                                        startActivity(intent)
-                                    } else {
-                                        Toast.makeText(this@ProfileActivity, "You do not have access to view this post!", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                        }
+                        val intent = Intent(this@ProfileActivity, PostActivity::class.java)
+                        intent.putExtra(EXTRA_POSTTIME, videos[position].creationTimeMs.toString())
+                        startActivity(intent)
                     }
             }
     }
 
     private lateinit var audio: MutableList<Post>
+    private lateinit var audioIds: MutableList<String>
     private lateinit var adapterAudio: FileAdapter
-    private lateinit var audioList: MutableList<Post>
     private lateinit var audioGridView: GridView
-    private fun loadAudio() {
+    private fun loadAudio(friendlist: MutableList<String> = ArrayList(), foflist: MutableList<String> = ArrayList(), granularreadlist: MutableList<String> = ArrayList()) {
         audio = mutableListOf()
+        audioIds = mutableListOf()
         audioGridView = binding.gvAudio
         adapterAudio = FileAdapter(this, audio)
         audioGridView.adapter = adapterAudio
@@ -140,48 +167,61 @@ class ProfileActivity : AppCompatActivity() {
         firestoreDb.collection("artifacts").whereEqualTo("user", currUserId)
             .whereEqualTo("type", "audio")
             .get()
-            .addOnSuccessListener { myPosts ->
-                audioList = myPosts.toObjects((Post::class.java))
-                Log.i(TAG, "$audioList")
+            .addOnSuccessListener { myImages ->
+                var audList = mutableListOf<Post>()
+                var audIdList = mutableListOf<String>()
+                myImages.forEach { doc ->
+                    var myPost = doc.toObject(Post::class.java)
+                    Log.i(TAG, "Post ID: ${doc.id}")
+                    Log.i(TAG, "Post: $myPost")
+                    if ((myPost.privacy!!.contains("/pub2")) || (myPost.privacy!!.contains("/pub3")) || (myPost.privacy!!.contains("/pub4"))) {
+                        if (doc.id !in audIdList) {
+                            audList.add(myPost)
+                            audIdList.add(doc.id)
+                        }
+                    }
+
+                    if ((myPost.privacy!!.contains("/frds2")) || (myPost.privacy!!.contains("/frds3")) || (myPost.privacy!!.contains("/frds4"))) {
+                        if (myPost.userId in friendlist && doc.id !in audIdList) {
+                            audList.add(myPost)
+                            audIdList.add(doc.id)
+                        }
+                    }
+
+                    if ((myPost.privacy!!.contains("/fof2")) || (myPost.privacy!!.contains("/fof3")) || (myPost.privacy!!.contains("/fof4"))) {
+                        if (myPost.userId in foflist && doc.id !in audIdList) {
+                            audList.add(myPost)
+                            audIdList.add(doc.id)
+                        }
+                    }
+
+                    if (doc.id in granularreadlist && doc.id !in audIdList) {
+                        audList.add(myPost)
+                        audIdList.add(doc.id)
+                    }
+                }
                 audio.clear()
-                audio.addAll(audioList)
+                audio.addAll(audList)
+                audioIds.clear()
+                audioIds.addAll(audIdList)
                 adapterAudio.notifyDataSetChanged()
 
                 audioGridView.onItemClickListener =
                     AdapterView.OnItemClickListener { _, _, position, _ ->
-                        if (audio[position].privacy == "public" || audio[position].userId == userId) {
-                            val intent = Intent(this@ProfileActivity, PostActivity::class.java)
-                            intent.putExtra(EXTRA_POSTTIME, audio[position].creationTimeMs.toString())
-                            startActivity(intent)
-                        } else {
-                            firestoreDb.collection("links")
-                                .document(audio[position].userId as String)
-                                .collection("friend")
-                                .get()
-                                .addOnSuccessListener { friendSnapshots ->
-                                    var allFriends = mutableListOf<String>()
-                                    friendSnapshots.forEach { doc ->
-                                        allFriends.add(doc.id)
-                                    }
-                                    if (userId in allFriends) {
-                                        val intent = Intent(this@ProfileActivity, PostActivity::class.java)
-                                        intent.putExtra(EXTRA_POSTTIME, audio[position].creationTimeMs.toString())
-                                        startActivity(intent)
-                                    } else {
-                                        Toast.makeText(this@ProfileActivity, "You do not have access to view this post!", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                        }
+                        val intent = Intent(this@ProfileActivity, PostActivity::class.java)
+                        intent.putExtra(EXTRA_POSTTIME, audio[position].creationTimeMs.toString())
+                        startActivity(intent)
                     }
             }
     }
 
     private lateinit var text: MutableList<Post>
+    private lateinit var textIds: MutableList<String>
     private lateinit var adapterText: FileAdapter
-    private lateinit var textList: MutableList<Post>
     private lateinit var textGridView: GridView
-    private fun loadText() {
+    private fun loadText(friendlist: MutableList<String> = ArrayList(), foflist: MutableList<String> = ArrayList(), granularreadlist: MutableList<String> = ArrayList()) {
         text = mutableListOf()
+        textIds = mutableListOf()
         textGridView = binding.gvText
         adapterText = FileAdapter(this, text)
         textGridView.adapter = adapterText
@@ -189,38 +229,50 @@ class ProfileActivity : AppCompatActivity() {
         firestoreDb.collection("artifacts").whereEqualTo("user", currUserId)
             .whereEqualTo("type", "text")
             .get()
-            .addOnSuccessListener { myPosts ->
-                textList = myPosts.toObjects((Post::class.java))
-                Log.i(TAG, "$textList")
+            .addOnSuccessListener { myImages ->
+                var texList = mutableListOf<Post>()
+                var texIdList = mutableListOf<String>()
+                myImages.forEach { doc ->
+                    var myPost = doc.toObject(Post::class.java)
+                    Log.i(TAG, "Post ID: ${doc.id}")
+                    Log.i(TAG, "Post: $myPost")
+                    if ((myPost.privacy!!.contains("/pub2")) || (myPost.privacy!!.contains("/pub3")) || (myPost.privacy!!.contains("/pub4"))) {
+                        if (doc.id !in texIdList) {
+                            texList.add(myPost)
+                            texIdList.add(doc.id)
+                        }
+                    }
+
+                    if ((myPost.privacy!!.contains("/frds2")) || (myPost.privacy!!.contains("/frds3")) || (myPost.privacy!!.contains("/frds4"))) {
+                        if (myPost.userId in friendlist && doc.id !in texIdList) {
+                            texList.add(myPost)
+                            texIdList.add(doc.id)
+                        }
+                    }
+
+                    if ((myPost.privacy!!.contains("/fof2")) || (myPost.privacy!!.contains("/fof3")) || (myPost.privacy!!.contains("/fof4"))) {
+                        if (myPost.userId in foflist && doc.id !in texIdList) {
+                            texList.add(myPost)
+                            texIdList.add(doc.id)
+                        }
+                    }
+
+                    if (doc.id in granularreadlist && doc.id !in texIdList) {
+                        texList.add(myPost)
+                        texIdList.add(doc.id)
+                    }
+                }
                 text.clear()
-                text.addAll(textList)
+                text.addAll(texList)
+                textIds.clear()
+                textIds.addAll(texIdList)
                 adapterText.notifyDataSetChanged()
 
                 textGridView.onItemClickListener =
                     AdapterView.OnItemClickListener { _, _, position, _ ->
-                        if (text[position].privacy == "public" || text[position].userId == userId) {
-                            val intent = Intent(this@ProfileActivity, PostActivity::class.java)
-                            intent.putExtra(EXTRA_POSTTIME, text[position].creationTimeMs.toString())
-                            startActivity(intent)
-                        } else {
-                            firestoreDb.collection("links")
-                                .document(text[position].userId as String)
-                                .collection("friend")
-                                .get()
-                                .addOnSuccessListener { friendSnapshots ->
-                                    var allFriends = mutableListOf<String>()
-                                    friendSnapshots.forEach { doc ->
-                                        allFriends.add(doc.id)
-                                    }
-                                    if (userId in allFriends) {
-                                        val intent = Intent(this@ProfileActivity, PostActivity::class.java)
-                                        intent.putExtra(EXTRA_POSTTIME, text[position].creationTimeMs.toString())
-                                        startActivity(intent)
-                                    } else {
-                                        Toast.makeText(this@ProfileActivity, "You do not have access to view this post!", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                        }
+                        val intent = Intent(this@ProfileActivity, PostActivity::class.java)
+                        intent.putExtra(EXTRA_POSTTIME, text[position].creationTimeMs.toString())
+                        startActivity(intent)
                     }
             }
     }
@@ -293,10 +345,14 @@ class ProfileActivity : AppCompatActivity() {
                                                     binding.btnProfile.text = "Create Post"
                                                     binding.btnProfile.isEnabled = true
                                                     binding.btnProfile.setOnClickListener {
-                                                        val createIntent = Intent(this, CreateActivity::class.java)
+                                                        val createIntent =
+                                                            Intent(this, CreateActivity::class.java)
                                                         startActivity(createIntent)
                                                     }
-                                                    val particularsIntent = Intent(this, ParticularsActivity::class.java)
+                                                    val particularsIntent = Intent(
+                                                        this,
+                                                        ParticularsActivity::class.java
+                                                    )
                                                     binding.profilePicture.setOnClickListener {
                                                         startActivity(particularsIntent)
                                                     }
@@ -342,15 +398,63 @@ class ProfileActivity : AppCompatActivity() {
                                                     }
                                                 }
 
-                                                loadImages()
-                                                loadVideos()
-                                                loadText()
-                                                loadAudio()
+                                                var friendList: MutableList<String> = ArrayList()
+                                                var fofList: MutableList<String> = ArrayList()
+                                                var granularReadList: MutableList<String> = ArrayList()
+                                                friendList.add(userId!!)
 
-                                                binding.fabLink.setOnClickListener {
-                                                    handleLinkButtonClick()
-                                                }
+                                                firestoreDb.collection("links")
+                                                    .document(userId as String)
+                                                    .collection("friend")
+                                                    .get()
+                                                    .addOnSuccessListener { friends ->
+                                                        friends.forEach { fr ->
+                                                            if (fr != null) {
+                                                                friendList.add(fr.id)
+                                                            }
+                                                            firestoreDb.collection("links")
+                                                                .document(fr.id as String)
+                                                                .collection("friend")
+                                                                .get()
+                                                                .addOnSuccessListener { fofs ->
+                                                                    fofs.forEach { fof ->
+                                                                        if (fof != null) {
+                                                                            fofList.add(fof.id)
+                                                                        }
+                                                                    }
+                                                                }
+                                                        }
 
+                                                        firestoreDb.collection("links")
+                                                            .document(userId as String)
+                                                            .collection("read")
+                                                            .get()
+                                                            .addOnSuccessListener { readDocs ->
+                                                                readDocs.forEach { rd ->
+                                                                    if (rd != null) {
+                                                                        granularReadList.add(rd.id)
+                                                                    }
+                                                                }
+
+                                                                Log.i(
+                                                                    TAG,
+                                                                    "Friends List: $friendList"
+                                                                )
+                                                                Log.i(TAG, "FoF List: $fofList")
+                                                                Log.i(
+                                                                    TAG,
+                                                                    "Granular Read List: $granularReadList"
+                                                                )
+
+                                                                loadImages(friendList, fofList, granularReadList)
+                                                                loadVideos(friendList, fofList, granularReadList)
+                                                                loadText(friendList, fofList, granularReadList)
+                                                                loadAudio(friendList, fofList, granularReadList)
+                                                                binding.fabLink.setOnClickListener {
+                                                                    handleLinkButtonClick()
+                                                                }
+                                                            }
+                                                    }
                                             }
                                     }
                             }

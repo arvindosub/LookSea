@@ -45,7 +45,8 @@ class RegisterActivity : AppCompatActivity() {
                                 "newUser",
                                 "",
                                 "",
-                                "user"
+                                "user",
+                                "public"
                             )
                             firestoreDb.collection("artifacts")
                                 .document(userId)

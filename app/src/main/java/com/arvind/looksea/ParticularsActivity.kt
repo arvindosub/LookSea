@@ -104,7 +104,7 @@ class ParticularsActivity : AppCompatActivity() {
 
                     binding.etUsername.setText(signedInUser?.username)
                     binding.etAbout.setText(signedInUser?.description)
-
+                    binding.etPrivacy.setText(signedInUser?.privacy)
                 }
                 .addOnFailureListener { exception ->
                     Log.i(TAG, "Failed to fetch signed-in user", exception)
@@ -142,6 +142,10 @@ class ParticularsActivity : AppCompatActivity() {
 
         binding.btnSuggest.setOnClickListener {
             handleAnalysis()
+        }
+
+        binding.btnPrivacy.setOnClickListener {
+            handlePrivacyButtonClick()
         }
 
         binding.btnSubmit.setOnClickListener {
@@ -200,6 +204,11 @@ class ParticularsActivity : AppCompatActivity() {
         }
     }
 
+    private fun handlePrivacyButtonClick() {
+        val intent = Intent(this, AccessActivity::class.java)
+        startActivity(intent)
+    }
+
     private fun handleSubmitButtonClick() {
         if (imageUri == null && binding.etAbout.text.isBlank() && binding.etUsername.text.isBlank()) {
             Toast.makeText(this, "No changes made...", Toast.LENGTH_SHORT).show()
@@ -210,6 +219,7 @@ class ParticularsActivity : AppCompatActivity() {
         var newUrl = ""
         var newUsername = ""
         var oldUsername = signedInUser?.username.toString()
+        var newpriv = binding.etPrivacy.text.toString()
 
         if (binding.etAbout.text.isBlank()) {
             newDesc = signedInUser?.description.toString()
@@ -240,7 +250,9 @@ class ParticularsActivity : AppCompatActivity() {
                         val user = User(
                             newUsername,
                             newDesc,
-                            downloadUrlTask.result.toString()
+                            downloadUrlTask.result.toString(),
+                            "user",
+                            newpriv
                         )
                         firestoreDb.collection("artifacts").document("${userId}").set(user)
                     }.addOnCompleteListener { userUpdateTask ->
@@ -317,7 +329,9 @@ class ParticularsActivity : AppCompatActivity() {
             val user = User(
                 newUsername,
                 newDesc,
-                newUrl
+                newUrl,
+                "user",
+                newpriv
             )
             firestoreDb.collection("artifacts").document("${userId}").set(user)
                 .addOnCompleteListener { userUpdateTask ->

@@ -123,7 +123,6 @@ class PostActivity : AppCompatActivity() {
                                                         // post = response.toObjects(Post::class.java)[0]
                                                         binding.imageView.isVisible = true
                                                         binding.videoView.isVisible = false
-                                                        binding.tvPrivacy.text = "Privacy"
 
                                                         Log.i(TAG, "$post")
                                                         Log.i(TAG, "$updateList")
@@ -145,14 +144,8 @@ class PostActivity : AppCompatActivity() {
                                                         }
 
                                                         if (userId == post?.userId || postId in configList) {
-                                                            binding.rgPrivacy.isVisible = true
-                                                            if (post?.privacy == "public") {
-                                                                binding.rgbPublic.isChecked = true
-                                                                privacy = "public"
-                                                            } else {
-                                                                binding.rgbFriends.isChecked = true
-                                                                privacy = "private"
-                                                            }
+                                                            binding.llPrivacy.isVisible = true
+                                                            binding.etPrivacy.setText(post?.privacy)
                                                             binding.btnSubmit.isVisible = true
                                                         }
 
@@ -182,7 +175,7 @@ class PostActivity : AppCompatActivity() {
                                                             handleLinkButtonClick()
                                                         }
 
-                                                        binding.fabAccess.setOnClickListener {
+                                                        binding.btnPrivacy.setOnClickListener {
                                                             handleAccessButtonClick()
                                                         }
                                                     }
@@ -284,11 +277,7 @@ class PostActivity : AppCompatActivity() {
     }
 
     private fun handleSubmitButtonClick() {
-        if (binding.rgbFriends.isChecked) {
-            privacy = "friends"
-        } else {
-            privacy = "public"
-        }
+        privacy = binding.etPrivacy.text.toString()
 
         if (binding.etDescription.text.toString() == post?.description && post?.privacy == privacy) {
             Toast.makeText(this, "No changes made...", Toast.LENGTH_SHORT).show()

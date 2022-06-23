@@ -17,7 +17,7 @@
         <ImageView
             android:id="@+id/profilePic"
             android:layout_width="match_parent"
-            android:layout_height="290dp"
+            android:layout_height="200dp"
             android:layout_marginTop="10dp"
             android:scaleType="fitCenter"
             tools:ignore="ImageContrastCheck"
@@ -38,7 +38,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginTop="20dp">
+        android:layout_marginTop="5dp">
 
         <TextView
             android:layout_width="60dp"
@@ -99,14 +99,53 @@
         android:clickable="true"
         android:backgroundTint="@color/colorSecondaryVariant"
         android:textColor="@color/black"
-        android:layout_gravity="right"
+        android:layout_gravity="center"
         android:text="Suggest" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="5dp">
+
+        <TextView
+            android:layout_width="60dp"
+            android:layout_height="match_parent"
+            android:text="Privacy: "
+            android:textAlignment="textStart"
+            android:layout_marginTop="15dp"
+            android:textColor="@color/black"
+            android:textSize="16dp" />
+
+        <EditText
+        android:id="@+id/etPrivacy"
+        android:layout_width="220dp"
+        android:layout_height="match_parent"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Group"
+        android:minHeight="45dp"
+        android:inputType="textMultiLine"
+        android:maxLines="1" />
+
+        <Button
+            android:id="@+id/btnPrivacy"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:backgroundTint="@color/colorSecondary"
+            android:textColor="@color/black"
+            android:layout_gravity="right"
+            android:text="Granular"
+            android:textSize="11dp" />
+
+    </LinearLayout>
 
     <Button
         android:id="@+id/btnSubmit"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
+        android:layout_marginTop="10dp"
         android:clickable="true"
         android:text="Submit" />
 
