@@ -126,7 +126,6 @@ open class HomeActivity : AppCompatActivity() {
                                                     postIdList.add(doc.id)
                                                 }
                                             }
-                                            Log.i(TAG, "1 Post ID List: $postIdList")
 
                                             if (myPost.privacy!!.contains("/frds2") || myPost.privacy!!.contains("/frds3") || myPost.privacy!!.contains("/frds4")) {
                                                 if (myPost.userId in friendList && doc.id !in postIdList) {
@@ -134,7 +133,6 @@ open class HomeActivity : AppCompatActivity() {
                                                     postIdList.add(doc.id)
                                                 }
                                             }
-                                            Log.i(TAG, "2 Post ID List: $postIdList")
 
                                             if (myPost.privacy!!.contains("/fof2") || myPost.privacy!!.contains("/fof3") || myPost.privacy!!.contains("/fof4")) {
                                                 if (myPost.userId in fofList && doc.id !in postIdList) {
@@ -142,13 +140,11 @@ open class HomeActivity : AppCompatActivity() {
                                                     postIdList.add(doc.id)
                                                 }
                                             }
-                                            Log.i(TAG, "3 Post ID List: $postIdList")
 
                                             if (doc.id in granularReadList && doc.id !in postIdList) {
                                                 postList.add(myPost)
                                                 postIdList.add(doc.id)
                                             }
-                                            Log.i(TAG, "4 Post ID List: $postIdList")
                                         }
                                         posts.clear()
                                         posts.addAll(postList)

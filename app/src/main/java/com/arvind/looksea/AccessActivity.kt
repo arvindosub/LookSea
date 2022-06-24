@@ -125,88 +125,41 @@ class AccessActivity : AppCompatActivity() {
 
                                                             if (idList != null) {
                                                                 firestoreDb.collection("artifacts")
-                                                                    .whereIn(
-                                                                        FieldPath.documentId(),
-                                                                        idList
-                                                                    )
+                                                                    .whereIn(FieldPath.documentId(), idList)
                                                                     .whereIn("type", mutableListOf("user"))
                                                                     .get()
                                                                     .addOnSuccessListener { friendSnapshots ->
                                                                         friendSnapshots.forEach { doc ->
-                                                                            var myPost =
-                                                                                doc.toObject(
-                                                                                    Item::class.java
-                                                                                )
-                                                                            Log.i(
-                                                                                TAG,
-                                                                                "Post ID: ${doc.id}"
-                                                                            )
-                                                                            Log.i(
-                                                                                TAG,
-                                                                                "Post: $myPost"
-                                                                            )
+                                                                            var myPost = doc.toObject(Item::class.java)
+                                                                            Log.i(TAG, "Post ID: ${doc.id}")
+                                                                            Log.i(TAG, "Post: $myPost")
 
-                                                                            if ((myPost.privacy!!.contains(
-                                                                                    "/pub2"
-                                                                                )) || (myPost.privacy!!.contains(
-                                                                                    "/pub3"
-                                                                                )) || (myPost.privacy!!.contains(
-                                                                                    "/pub4"
-                                                                                ))
-                                                                            ) {
+                                                                            if ((myPost.privacy!!.contains("/pub2")) || (myPost.privacy!!.contains("/pub3")) || (myPost.privacy!!.contains("/pub4"))) {
                                                                                 if (doc.id !in searchIdList) {
-                                                                                    searchList.add(
-                                                                                        myPost
-                                                                                    )
-                                                                                    searchIdList.add(
-                                                                                        doc.id
-                                                                                    )
+                                                                                    searchList.add(myPost)
+                                                                                    searchIdList.add(doc.id)
                                                                                     usernameList.add(myPost.username.toString())
                                                                                 }
                                                                             }
 
-                                                                            if ((myPost.privacy!!.contains(
-                                                                                    "/frds2"
-                                                                                )) || (myPost.privacy!!.contains(
-                                                                                    "/frds3"
-                                                                                )) || (myPost.privacy!!.contains(
-                                                                                    "/frds4"
-                                                                                ))
-                                                                            ) {
+                                                                            if ((myPost.privacy!!.contains("/frds2")) || (myPost.privacy!!.contains("/frds3")) || (myPost.privacy!!.contains("/frds4"))) {
                                                                                 if ((myPost.userId in friendList || doc.id in friendList) && doc.id !in searchIdList) {
-                                                                                    searchList.add(
-                                                                                        myPost
-                                                                                    )
-                                                                                    searchIdList.add(
-                                                                                        doc.id
-                                                                                    )
+                                                                                    searchList.add(myPost)
+                                                                                    searchIdList.add(doc.id)
                                                                                     usernameList.add(myPost.username.toString())
                                                                                 }
                                                                             }
 
-                                                                            if ((myPost.privacy!!.contains(
-                                                                                    "/fof2"
-                                                                                )) || (myPost.privacy!!.contains(
-                                                                                    "/fof3"
-                                                                                )) || (myPost.privacy!!.contains(
-                                                                                    "/fof4"
-                                                                                ))
-                                                                            ) {
+                                                                            if ((myPost.privacy!!.contains("/fof2")) || (myPost.privacy!!.contains("/fof3")) || (myPost.privacy!!.contains("/fof4"))) {
                                                                                 if ((myPost.userId in fofList || doc.id in fofList) && doc.id !in searchIdList) {
-                                                                                    searchList.add(
-                                                                                        myPost
-                                                                                    )
-                                                                                    searchIdList.add(
-                                                                                        doc.id
-                                                                                    )
+                                                                                    searchList.add(myPost)
+                                                                                    searchIdList.add(doc.id)
                                                                                     usernameList.add(myPost.username.toString())
                                                                                 }
                                                                             }
 
                                                                             if (doc.id in granularReadList && doc.id !in searchIdList) {
-                                                                                searchList.add(
-                                                                                    myPost
-                                                                                )
+                                                                                searchList.add(myPost)
                                                                                 searchIdList.add(doc.id)
                                                                                 usernameList.add(myPost.username.toString())
                                                                             }
@@ -246,87 +199,40 @@ class AccessActivity : AppCompatActivity() {
                                                             }
                                                             if (idList != null) {
                                                                 firestoreDb.collection("artifacts")
-                                                                    .whereIn(
-                                                                        FieldPath.documentId(),
-                                                                        idList
-                                                                    )
+                                                                    .whereIn(FieldPath.documentId(), idList)
                                                                     .whereIn("type", mutableListOf("user"))
                                                                     .get()
                                                                     .addOnSuccessListener { docSnapshots ->
                                                                         docSnapshots.forEach { doc ->
-                                                                            var myPost =
-                                                                                doc.toObject(
-                                                                                    Item::class.java
-                                                                                )
-                                                                            Log.i(
-                                                                                TAG,
-                                                                                "Post ID: ${doc.id}"
-                                                                            )
-                                                                            Log.i(
-                                                                                TAG,
-                                                                                "Post: $myPost"
-                                                                            )
-                                                                            if ((myPost.privacy!!.contains(
-                                                                                    "/pub2"
-                                                                                )) || (myPost.privacy!!.contains(
-                                                                                    "/pub3"
-                                                                                )) || (myPost.privacy!!.contains(
-                                                                                    "/pub4"
-                                                                                ))
-                                                                            ) {
+                                                                            var myPost = doc.toObject(Item::class.java)
+                                                                            Log.i(TAG, "Post ID: ${doc.id}")
+                                                                            Log.i(TAG, "Post: $myPost")
+                                                                            if ((myPost.privacy!!.contains("/pub2")) || (myPost.privacy!!.contains("/pub3")) || (myPost.privacy!!.contains("/pub4"))) {
                                                                                 if (doc.id !in searchIdList) {
-                                                                                    searchList.add(
-                                                                                        myPost
-                                                                                    )
-                                                                                    searchIdList.add(
-                                                                                        doc.id
-                                                                                    )
+                                                                                    searchList.add(myPost)
+                                                                                    searchIdList.add(doc.id)
                                                                                     usernameList.add(myPost.username.toString())
                                                                                 }
                                                                             }
 
-                                                                            if ((myPost.privacy!!.contains(
-                                                                                    "/frds2"
-                                                                                )) || (myPost.privacy!!.contains(
-                                                                                    "/frds3"
-                                                                                )) || (myPost.privacy!!.contains(
-                                                                                    "/frds4"
-                                                                                ))
-                                                                            ) {
+                                                                            if ((myPost.privacy!!.contains("/frds2")) || (myPost.privacy!!.contains("/frds3")) || (myPost.privacy!!.contains("/frds4"))) {
                                                                                 if ((myPost.userId in friendList || doc.id in friendList) && doc.id !in searchIdList) {
-                                                                                    searchList.add(
-                                                                                        myPost
-                                                                                    )
-                                                                                    searchIdList.add(
-                                                                                        doc.id
-                                                                                    )
+                                                                                    searchList.add(myPost)
+                                                                                    searchIdList.add(doc.id)
                                                                                     usernameList.add(myPost.username.toString())
                                                                                 }
                                                                             }
 
-                                                                            if ((myPost.privacy!!.contains(
-                                                                                    "/fof2"
-                                                                                )) || (myPost.privacy!!.contains(
-                                                                                    "/fof3"
-                                                                                )) || (myPost.privacy!!.contains(
-                                                                                    "/fof4"
-                                                                                ))
-                                                                            ) {
+                                                                            if ((myPost.privacy!!.contains("/fof2")) || (myPost.privacy!!.contains("/fof3")) || (myPost.privacy!!.contains("/fof4"))) {
                                                                                 if ((myPost.userId in fofList || doc.id in fofList) && doc.id !in searchIdList) {
-                                                                                    searchList.add(
-                                                                                        myPost
-                                                                                    )
-                                                                                    searchIdList.add(
-                                                                                        doc.id
-                                                                                    )
+                                                                                    searchList.add(myPost)
+                                                                                    searchIdList.add(doc.id)
                                                                                     usernameList.add(myPost.username.toString())
                                                                                 }
                                                                             }
 
                                                                             if (doc.id in granularReadList && doc.id !in searchIdList) {
-                                                                                searchList.add(
-                                                                                    myPost
-                                                                                )
+                                                                                searchList.add(myPost)
                                                                                 searchIdList.add(doc.id)
                                                                                 usernameList.add(myPost.username.toString())
                                                                             }
