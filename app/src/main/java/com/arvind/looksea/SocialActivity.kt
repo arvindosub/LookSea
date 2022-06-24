@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Toast
 import androidx.core.widget.addTextChangedListener
 import com.arvind.looksea.models.User
 import com.google.firebase.auth.FirebaseAuth
@@ -28,6 +29,7 @@ class SocialActivity : AppCompatActivity() {
     private lateinit var adapterSearch: UserAdapter
     private var searchList = mutableListOf<User>()
     private var searchIdList = mutableListOf<String>()
+    private var viewableIds = mutableListOf<String>()
 
     private lateinit var friend: MutableList<User>
     private lateinit var adapterFriends: UserAdapter
@@ -211,30 +213,40 @@ class SocialActivity : AppCompatActivity() {
                                                                             var myUser = doc.toObject(User::class.java)
                                                                             Log.i(TAG, "Post ID: ${doc.id}")
                                                                             Log.i(TAG, "Post: $myUser")
-                                                                            if ((myUser.privacy!!.contains("/pub2")) || (myUser.privacy!!.contains("/pub3")) || (myUser.privacy!!.contains("/pub4"))) {
+                                                                            if ((myUser.privacy!!.contains("/pub1")) || (myUser.privacy!!.contains("/pub2")) || (myUser.privacy!!.contains("/pub3")) || (myUser.privacy!!.contains("/pub4"))) {
                                                                                 if (doc.id !in searchIdList) {
                                                                                     searchList.add(myUser)
                                                                                     searchIdList.add(doc.id)
+                                                                                    if (!myUser.privacy!!.contains("/pub1")) {
+                                                                                        viewableIds.add(doc.id)
+                                                                                    }
                                                                                 }
                                                                             }
 
-                                                                            if ((myUser.privacy!!.contains("/frds2")) || (myUser.privacy!!.contains("/frds3")) || (myUser.privacy!!.contains("/frds4"))) {
+                                                                            if ((myUser.privacy!!.contains("/frds1")) || (myUser.privacy!!.contains("/frds2")) || (myUser.privacy!!.contains("/frds3")) || (myUser.privacy!!.contains("/frds4"))) {
                                                                                 if (doc.id in friendList && doc.id !in searchIdList) {
                                                                                     searchList.add(myUser)
                                                                                     searchIdList.add(doc.id)
+                                                                                    if (!myUser.privacy!!.contains("/frds1")) {
+                                                                                        viewableIds.add(doc.id)
+                                                                                    }
                                                                                 }
                                                                             }
 
-                                                                            if ((myUser.privacy!!.contains("/fof2")) || (myUser.privacy!!.contains("/fof3")) || (myUser.privacy!!.contains("/fof4"))) {
+                                                                            if ((myUser.privacy!!.contains("/fof1")) || (myUser.privacy!!.contains("/fof2")) || (myUser.privacy!!.contains("/fof3")) || (myUser.privacy!!.contains("/fof4"))) {
                                                                                 if (doc.id in fofList && doc.id !in searchIdList) {
                                                                                     searchList.add(myUser)
                                                                                     searchIdList.add(doc.id)
+                                                                                    if (!myUser.privacy!!.contains("/fof1")) {
+                                                                                        viewableIds.add(doc.id)
+                                                                                    }
                                                                                 }
                                                                             }
 
                                                                             if (doc.id in granularReadList && doc.id !in searchIdList) {
                                                                                 searchList.add(myUser)
                                                                                 searchIdList.add(doc.id)
+                                                                                viewableIds.add(doc.id)
                                                                             }
                                                                         }
                                                                         search.clear()
@@ -279,30 +291,40 @@ class SocialActivity : AppCompatActivity() {
                                                                             var myUser = doc.toObject(User::class.java)
                                                                             Log.i(TAG, "Post ID: ${doc.id}")
                                                                             Log.i(TAG, "Post: $myUser")
-                                                                            if ((myUser.privacy!!.contains("/pub2")) || (myUser.privacy!!.contains("/pub3")) || (myUser.privacy!!.contains("/pub4"))) {
+                                                                            if ((myUser.privacy!!.contains("/pub1")) || (myUser.privacy!!.contains("/pub2")) || (myUser.privacy!!.contains("/pub3")) || (myUser.privacy!!.contains("/pub4"))) {
                                                                                 if (doc.id !in searchIdList) {
                                                                                     searchList.add(myUser)
                                                                                     searchIdList.add(doc.id)
+                                                                                    if (!myUser.privacy!!.contains("/pub1")) {
+                                                                                        viewableIds.add(doc.id)
+                                                                                    }
                                                                                 }
                                                                             }
 
-                                                                            if ((myUser.privacy!!.contains("/frds2")) || (myUser.privacy!!.contains("/frds3")) || (myUser.privacy!!.contains("/frds4"))) {
+                                                                            if ((myUser.privacy!!.contains("/frds1")) || (myUser.privacy!!.contains("/frds2")) || (myUser.privacy!!.contains("/frds3")) || (myUser.privacy!!.contains("/frds4"))) {
                                                                                 if (doc.id in friendList && doc.id !in searchIdList) {
                                                                                     searchList.add(myUser)
                                                                                     searchIdList.add(doc.id)
+                                                                                    if (!myUser.privacy!!.contains("/frds1")) {
+                                                                                        viewableIds.add(doc.id)
+                                                                                    }
                                                                                 }
                                                                             }
 
-                                                                            if ((myUser.privacy!!.contains("/fof2")) || (myUser.privacy!!.contains("/fof3")) || (myUser.privacy!!.contains("/fof4"))) {
+                                                                            if ((myUser.privacy!!.contains("/fof1")) || (myUser.privacy!!.contains("/fof2")) || (myUser.privacy!!.contains("/fof3")) || (myUser.privacy!!.contains("/fof4"))) {
                                                                                 if (doc.id in fofList && doc.id !in searchIdList) {
                                                                                     searchList.add(myUser)
                                                                                     searchIdList.add(doc.id)
+                                                                                    if (!myUser.privacy!!.contains("/fof1")) {
+                                                                                        viewableIds.add(doc.id)
+                                                                                    }
                                                                                 }
                                                                             }
 
                                                                             if (doc.id in granularReadList && doc.id !in searchIdList) {
                                                                                 searchList.add(myUser)
                                                                                 searchIdList.add(doc.id)
+                                                                                viewableIds.add(doc.id)
                                                                             }
                                                                         }
                                                                         search.clear()
@@ -329,30 +351,40 @@ class SocialActivity : AppCompatActivity() {
                                                         var myUser = doc.toObject(User::class.java)
                                                         Log.i(TAG, "Post ID: ${doc.id}")
                                                         Log.i(TAG, "Post: $myUser")
-                                                        if ((myUser.privacy!!.contains("/pub2")) || (myUser.privacy!!.contains("/pub3")) || (myUser.privacy!!.contains("/pub4"))) {
+                                                        if ((myUser.privacy!!.contains("/pub1")) || (myUser.privacy!!.contains("/pub2")) || (myUser.privacy!!.contains("/pub3")) || (myUser.privacy!!.contains("/pub4"))) {
                                                             if (doc.id !in searchIdList) {
                                                                 searchList.add(myUser)
                                                                 searchIdList.add(doc.id)
+                                                                if (!myUser.privacy!!.contains("/pub1")) {
+                                                                    viewableIds.add(doc.id)
+                                                                }
                                                             }
                                                         }
 
-                                                        if ((myUser.privacy!!.contains("/frds2")) || (myUser.privacy!!.contains("/frds3")) || (myUser.privacy!!.contains("/frds4"))) {
+                                                        if ((myUser.privacy!!.contains("/frds1")) || (myUser.privacy!!.contains("/frds2")) || (myUser.privacy!!.contains("/frds3")) || (myUser.privacy!!.contains("/frds4"))) {
                                                             if (doc.id in friendList && doc.id !in searchIdList) {
                                                                 searchList.add(myUser)
                                                                 searchIdList.add(doc.id)
+                                                                if (!myUser.privacy!!.contains("/frds1")) {
+                                                                    viewableIds.add(doc.id)
+                                                                }
                                                             }
                                                         }
 
-                                                        if ((myUser.privacy!!.contains("/fof2")) || (myUser.privacy!!.contains("/fof3")) || (myUser.privacy!!.contains("/fof4"))) {
+                                                        if ((myUser.privacy!!.contains("/fof1")) || (myUser.privacy!!.contains("/fof2")) || (myUser.privacy!!.contains("/fof3")) || (myUser.privacy!!.contains("/fof4"))) {
                                                             if (doc.id in fofList && doc.id !in searchIdList) {
                                                                 searchList.add(myUser)
                                                                 searchIdList.add(doc.id)
+                                                                if (!myUser.privacy!!.contains("/fof1")) {
+                                                                    viewableIds.add(doc.id)
+                                                                }
                                                             }
                                                         }
 
                                                         if (doc.id in granularReadList && doc.id !in searchIdList) {
                                                             searchList.add(myUser)
                                                             searchIdList.add(doc.id)
+                                                            viewableIds.add(doc.id)
                                                         }
                                                     }
                                                     search.clear()
@@ -371,34 +403,43 @@ class SocialActivity : AppCompatActivity() {
                                                         var descList = doc.toObject((User::class.java)).description.split(' ')
                                                         Log.i(TAG, "Post ID: ${doc.id}")
                                                         Log.i(TAG, "Post: $myUser")
-                                                        if ((myUser.privacy!!.contains("/pub2")) || (myUser.privacy!!.contains("/pub3")) || (myUser.privacy!!.contains("/pub4"))) {
+                                                        if ((myUser.privacy!!.contains("/pub1")) || (myUser.privacy!!.contains("/pub2")) || (myUser.privacy!!.contains("/pub3")) || (myUser.privacy!!.contains("/pub4"))) {
                                                             if (doc.id !in searchIdList) {
                                                                 for (desc in descList) {
                                                                     if ((desc.contains(searchTerm, ignoreCase = true)) && (doc.id !in searchIdList)) {
                                                                         searchList.add(myUser)
                                                                         searchIdList.add(doc.id)
+                                                                        if (!myUser.privacy!!.contains("/pub1")) {
+                                                                            viewableIds.add(doc.id)
+                                                                        }
                                                                     }
                                                                 }
                                                             }
                                                         }
 
-                                                        if ((myUser.privacy!!.contains("/frds2")) || (myUser.privacy!!.contains("/frds3")) || (myUser.privacy!!.contains("/frds4"))) {
+                                                        if ((myUser.privacy!!.contains("/frds1")) || (myUser.privacy!!.contains("/frds2")) || (myUser.privacy!!.contains("/frds3")) || (myUser.privacy!!.contains("/frds4"))) {
                                                             if (doc.id in friendList && doc.id !in searchIdList) {
                                                                 for (desc in descList) {
                                                                     if ((desc.contains(searchTerm, ignoreCase = true)) && (doc.id !in searchIdList)) {
                                                                         searchList.add(myUser)
                                                                         searchIdList.add(doc.id)
+                                                                        if (!myUser.privacy!!.contains("/frds1")) {
+                                                                            viewableIds.add(doc.id)
+                                                                        }
                                                                     }
                                                                 }
                                                             }
                                                         }
 
-                                                        if ((myUser.privacy!!.contains("/fof2")) || (myUser.privacy!!.contains("/fof3")) || (myUser.privacy!!.contains("/fof4"))) {
+                                                        if ((myUser.privacy!!.contains("/fof1")) || (myUser.privacy!!.contains("/fof2")) || (myUser.privacy!!.contains("/fof3")) || (myUser.privacy!!.contains("/fof4"))) {
                                                             if (doc.id in fofList && doc.id !in searchIdList) {
                                                                 for (desc in descList) {
                                                                     if ((desc.contains(searchTerm, ignoreCase = true)) && (doc.id !in searchIdList)) {
                                                                         searchList.add(myUser)
                                                                         searchIdList.add(doc.id)
+                                                                        if (!myUser.privacy!!.contains("/fof1")) {
+                                                                            viewableIds.add(doc.id)
+                                                                        }
                                                                     }
                                                                 }
                                                             }
@@ -409,6 +450,7 @@ class SocialActivity : AppCompatActivity() {
                                                                 if ((desc.contains(searchTerm, ignoreCase = true)) && (doc.id !in searchIdList)) {
                                                                     searchList.add(myUser)
                                                                     searchIdList.add(doc.id)
+                                                                    viewableIds.add(doc.id)
                                                                 }
                                                             }
                                                         }
@@ -430,47 +472,65 @@ class SocialActivity : AppCompatActivity() {
                                                     var descList = doc.toObject((User::class.java)).description.split(' ')
                                                     Log.i(TAG, "Post ID: ${doc.id}")
                                                     Log.i(TAG, "Post: $myUser")
-                                                    if ((myUser.privacy!!.contains("/pub2")) || (myUser.privacy!!.contains("/pub3")) || (myUser.privacy!!.contains("/pub4"))) {
+                                                    if ((myUser.privacy!!.contains("/pub1")) || (myUser.privacy!!.contains("/pub2")) || (myUser.privacy!!.contains("/pub3")) || (myUser.privacy!!.contains("/pub4"))) {
                                                         if (doc.id !in searchIdList) {
                                                             for (desc in descList) {
                                                                 if ((desc.contains(it.toString(), ignoreCase = true)) && (doc.id !in searchIdList)) {
                                                                     searchList.add(myUser)
                                                                     searchIdList.add(doc.id)
+                                                                    if (!myUser.privacy!!.contains("/pub1")) {
+                                                                        viewableIds.add(doc.id)
+                                                                    }
                                                                 }
                                                             }
                                                             if ((myUser.username.toString().contains(it.toString(), ignoreCase = true)) && (doc.id !in searchIdList)) {
                                                                 searchList.add(myUser)
                                                                 searchIdList.add(doc.id)
+                                                                if (!myUser.privacy!!.contains("/pub1")) {
+                                                                    viewableIds.add(doc.id)
+                                                                }
                                                             }
                                                         }
                                                     }
 
-                                                    if ((myUser.privacy!!.contains("/frds2")) || (myUser.privacy!!.contains("/frds3")) || (myUser.privacy!!.contains("/frds4"))) {
+                                                    if ((myUser.privacy!!.contains("/frds1")) || (myUser.privacy!!.contains("/frds2")) || (myUser.privacy!!.contains("/frds3")) || (myUser.privacy!!.contains("/frds4"))) {
                                                         if (doc.id in friendList && doc.id !in searchIdList) {
                                                             for (desc in descList) {
                                                                 if ((desc.contains(it.toString(), ignoreCase = true)) && (doc.id !in searchIdList)) {
                                                                     searchList.add(myUser)
                                                                     searchIdList.add(doc.id)
+                                                                    if (!myUser.privacy!!.contains("/frds1")) {
+                                                                        viewableIds.add(doc.id)
+                                                                    }
                                                                 }
                                                             }
                                                             if ((myUser.username.toString().contains(it.toString(), ignoreCase = true)) && (doc.id !in searchIdList)) {
                                                                 searchList.add(myUser)
                                                                 searchIdList.add(doc.id)
+                                                                if (!myUser.privacy!!.contains("/frds1")) {
+                                                                    viewableIds.add(doc.id)
+                                                                }
                                                             }
                                                         }
                                                     }
 
-                                                    if ((myUser.privacy!!.contains("/fof2")) || (myUser.privacy!!.contains("/fof3")) || (myUser.privacy!!.contains("/fof4"))) {
+                                                    if ((myUser.privacy!!.contains("/fof1")) || (myUser.privacy!!.contains("/fof2")) || (myUser.privacy!!.contains("/fof3")) || (myUser.privacy!!.contains("/fof4"))) {
                                                         if (doc.id in fofList && doc.id !in searchIdList) {
                                                             for (desc in descList) {
                                                                 if ((desc.contains(it.toString(), ignoreCase = true)) && (doc.id !in searchIdList)) {
                                                                     searchList.add(myUser)
                                                                     searchIdList.add(doc.id)
+                                                                    if (!myUser.privacy!!.contains("/fof1")) {
+                                                                        viewableIds.add(doc.id)
+                                                                    }
                                                                 }
                                                             }
                                                             if ((myUser.username.toString().contains(it.toString(), ignoreCase = true)) && (doc.id !in searchIdList)) {
                                                                 searchList.add(myUser)
                                                                 searchIdList.add(doc.id)
+                                                                if (!myUser.privacy!!.contains("/fof1")) {
+                                                                    viewableIds.add(doc.id)
+                                                                }
                                                             }
                                                         }
                                                     }
@@ -480,11 +540,13 @@ class SocialActivity : AppCompatActivity() {
                                                             if ((desc.contains(it.toString(), ignoreCase = true)) && (doc.id !in searchIdList)) {
                                                                 searchList.add(myUser)
                                                                 searchIdList.add(doc.id)
+                                                                viewableIds.add(doc.id)
                                                             }
                                                         }
                                                         if ((myUser.username.toString().contains(it.toString(), ignoreCase = true)) && (doc.id !in searchIdList)) {
                                                             searchList.add(myUser)
                                                             searchIdList.add(doc.id)
+                                                            viewableIds.add(doc.id)
                                                         }
                                                     }
                                                 }
@@ -499,11 +561,14 @@ class SocialActivity : AppCompatActivity() {
                     }
                 adapterSearch.setOnItemClickListener(object : UserAdapter.onItemClickListener {
                     override fun onItemClick(position: Int) {
-                        val person = searchList[position]
-                        Log.i(TAG, "$person")
-                        val intent = Intent(this@SocialActivity, ProfileActivity::class.java)
-                        intent.putExtra(EXTRA_USERNAME, person.username)
-                        startActivity(intent)
+                        if (searchIdList[position] in viewableIds) {
+                            val person = searchList[position]
+                            val intent = Intent(this@SocialActivity, ProfileActivity::class.java)
+                            intent.putExtra(EXTRA_USERNAME, person.username)
+                            startActivity(intent)
+                        } else {
+                            Toast.makeText(this@SocialActivity, "You do not have view this user!", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 })
 
