@@ -4,7 +4,6 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
-import com.arvind.looksea.models.Post
 import com.arvind.looksea.models.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -14,6 +13,12 @@ import com.arvind.looksea.databinding.ActivityAccessBinding
 import com.arvind.looksea.models.Item
 import com.arvind.looksea.models.Link
 import com.google.firebase.firestore.FieldPath
+import org.w3c.dom.NodeList
+import java.util.logging.XMLFormatter
+import javax.xml.xpath.XPath
+import javax.xml.xpath.XPathConstants
+import javax.xml.xpath.XPathFactory
+import javax.xml.xpath.XPathExpression
 
 private const val TAG = "AccessActivity"
 
@@ -524,6 +529,10 @@ class AccessActivity : AppCompatActivity() {
                     handleSubmitButtonClick()
                 }
 
+                binding.btnSubmitXpath.setOnClickListener {
+                    handleSubmitXpathButtonClick()
+                }
+
             }
             .addOnFailureListener { exception ->
                 Log.i(TAG, "Failed to fetch signed-in user", exception)
@@ -583,6 +592,34 @@ class AccessActivity : AppCompatActivity() {
         binding.btnSubmit.isEnabled = true
         Toast.makeText(this, "Access Configured!", Toast.LENGTH_SHORT).show()
         finish()
+
+    }
+
+    private fun handleSubmitXpathButtonClick() {
+        binding.btnSubmitXpath.isEnabled = false
+        var artifactId = intent.getStringExtra(EXTRA_ARTIFACTID)
+        if (artifactId == null) {
+            artifactId = userId.toString()
+        }
+        Log.i(TAG, "$artifactId")
+        var xpathCode = binding.etXpathCode.text.toString()
+
+        // ## searching
+        // all users from japan --- //artifacts[@type='user'][contains(@description, 'japan')]
+        // all friends of a certain user --- //links/child::document[@id='userId']/child::collection[@id='friend']
+
+        var xPath = XPathFactory.newInstance().newXPath()
+        val expression = "/Tutorials/Tutorial"
+        var myres = xPath.compile(expression)
+
+        Log.i(TAG, "Test: $myres")
+
+        xpathCode = xpathCode.replace("\\s".toRegex(), "")
+        var codeList = xpathCode.split('/')
+
+        binding.btnSubmitXpath.isEnabled = true
+        Toast.makeText(this, "Access Configured!", Toast.LENGTH_SHORT).show()
+        //finish()
 
     }
 

@@ -55,6 +55,20 @@
                 android:layout_marginLeft="300dp"
                 android:src="@drawable/ic_like" />
 
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabLink"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_gravity="right"
+                android:backgroundTint="@color/colorSecondaryVariant"
+                android:clickable="true"
+                android:tint="@color/black"
+                app:backgroundTint="@color/colorPrimary"
+                app:fabCustomSize="50dp"
+                app:srcCompat="@drawable/ic_link"
+                app:tint="@color/black"
+                tools:ignore="SpeakableTextPresentCheck" />
+
         </FrameLayout>
 
         <LinearLayout
@@ -99,7 +113,7 @@
 
             <EditText
                 android:id="@+id/etPrivacy"
-                android:layout_width="220dp"
+                android:layout_width="200dp"
                 android:layout_height="match_parent"
                 android:layout_marginTop="8dp"
                 android:ems="10"
@@ -110,7 +124,7 @@
 
             <Button
                 android:id="@+id/btnPrivacy"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:clickable="true"
                 android:backgroundTint="@color/colorSecondary"
@@ -210,22 +224,5 @@
         </LinearLayout>
 
     </LinearLayout>
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabLink"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        app:fabCustomSize="50dp"
-        android:layout_marginEnd="50dp"
-        android:layout_marginBottom="35dp"
-        android:backgroundTint="@color/colorSecondaryVariant"
-        android:clickable="true"
-        android:tint="@color/black"
-        app:backgroundTint="@color/colorPrimary"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:srcCompat="@drawable/ic_link"
-        app:tint="@color/black"
-        tools:ignore="SpeakableTextPresentCheck" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
