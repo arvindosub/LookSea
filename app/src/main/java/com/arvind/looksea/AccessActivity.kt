@@ -609,13 +609,23 @@ class AccessActivity : AppCompatActivity() {
         // all friends of a certain user --- //links/child::document[@id='userId']/child::collection[@id='friend']
 
         var xPath = XPathFactory.newInstance().newXPath()
-        val expression = "/Tutorials/Tutorial"
-        var myres = xPath.compile(expression)
+        val expression = "//links/child::document[@id='userId']/child::collection[@id='friend']"
+        var steps = expression.drop(2).split('/')
+        steps.forEach { step ->
+            if (step.contains(']')) {
+                var tempStep = step.replace("]","")
+                var substeps = tempStep.split("[")
+                substeps.forEach { substep ->
+                    Log.i(TAG, "Test: $substep")
+                }
+            } else {
+                Log.i(TAG, "Test: $step")
+            }
+        }
+        //var myres = xPath.compile(expression)
 
-        Log.i(TAG, "Test: $myres")
-
-        xpathCode = xpathCode.replace("\\s".toRegex(), "")
-        var codeList = xpathCode.split('/')
+        //xpathCode = xpathCode.replace("\\s".toRegex(), "")
+        //var codeList = xpathCode.split('/')
 
         binding.btnSubmitXpath.isEnabled = true
         Toast.makeText(this, "Access Configured!", Toast.LENGTH_SHORT).show()
