@@ -609,8 +609,10 @@ class AccessActivity : AppCompatActivity() {
         // all friends of a certain user --- //links/child::document[@id='userId']/child::collection[@id='friend']
 
         var xPath = XPathFactory.newInstance().newXPath()
+        var qType = "links"
         val expression = "//links/child::document[@id='userId']/child::collection[@id='friend']"
         var steps = expression.drop(2).split('/')
+        var myList = mutableListOf<String>()
         steps.forEach { step ->
             if (step.contains(']')) {
                 var tempStep = step.replace("]","")
@@ -619,8 +621,15 @@ class AccessActivity : AppCompatActivity() {
                     Log.i(TAG, "Test: $substep")
                 }
             } else {
+                if (step.contains("artifacts")) {
+                    qType = "artifacts"
+                } else if (step.contains("tags")) {
+                    qType = "tags"
+                }
                 Log.i(TAG, "Test: $step")
             }
+            myList.add(step)
+            Log.i(TAG, "$myList")
         }
         //var myres = xPath.compile(expression)
 
