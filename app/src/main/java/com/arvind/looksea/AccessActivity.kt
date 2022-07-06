@@ -13,12 +13,6 @@ import com.arvind.looksea.databinding.ActivityAccessBinding
 import com.arvind.looksea.models.Item
 import com.arvind.looksea.models.Link
 import com.google.firebase.firestore.FieldPath
-import org.w3c.dom.NodeList
-import java.util.logging.XMLFormatter
-import javax.xml.xpath.XPath
-import javax.xml.xpath.XPathConstants
-import javax.xml.xpath.XPathFactory
-import javax.xml.xpath.XPathExpression
 
 private const val TAG = "AccessActivity"
 
@@ -601,45 +595,310 @@ class AccessActivity : AppCompatActivity() {
         if (artifactId == null) {
             artifactId = userId.toString()
         }
-        Log.i(TAG, "$artifactId")
-        var xpathCode = binding.etXpathCode.text.toString()
-
+        Log.i(TAG, "artifactId: $artifactId")
+        // var expression = binding.etXpathCode.text.toString()
         // ## searching
         // all users from japan --- //artifacts[@type='user'][contains(@description, 'japan')]
-        // all friends of a certain user --- //links/child::document[@id='userId']/child::collection[@id='friend']
-
-        var xPath = XPathFactory.newInstance().newXPath()
-        var qType = "links"
-        val expression = "//links/child::document[@id='userId']/child::collection[@id='friend']"
-        var steps = expression.drop(2).split('/')
-        var myList = mutableListOf<String>()
-        steps.forEach { step ->
-            if (step.contains(']')) {
-                var tempStep = step.replace("]","")
-                var substeps = tempStep.split("[")
-                substeps.forEach { substep ->
-                    Log.i(TAG, "Test: $substep")
-                }
-            } else {
-                if (step.contains("artifacts")) {
-                    qType = "artifacts"
-                } else if (step.contains("tags")) {
-                    qType = "tags"
-                }
-                Log.i(TAG, "Test: $step")
-            }
-            myList.add(step)
-            Log.i(TAG, "$myList")
-        }
-        //var myres = xPath.compile(expression)
-
-        //xpathCode = xpathCode.replace("\\s".toRegex(), "")
-        //var codeList = xpathCode.split('/')
+        // all friends of a certain user --- //links/child::document[@id=userId]/child::collection[@id='friend'][contains(@name, 'classmate')]
+        var expression = "//artifacts[@type='user'][contains(@description, 'japan')]"
+        var cmdStr = getCommandString(expression)
+        Log.i(TAG, "cmdStr: $cmdStr")
+        executeFirebaseCommand(cmdStr)
 
         binding.btnSubmitXpath.isEnabled = true
         Toast.makeText(this, "Access Configured!", Toast.LENGTH_SHORT).show()
         //finish()
 
+    }
+
+    private fun getCommandString (expression: String): String {
+        var items = expression.drop(2).split('/')
+        var myList = mutableListOf<MutableList<String>>()
+        items.forEach { item ->
+            var tempList = mutableListOf<String>()
+            if (item.contains(']')) {
+                var tempItem = item.replace("]","")
+                var subItems = tempItem.split("[")
+                subItems.forEach { subItem ->
+                    tempList.add(subItem)
+                }
+                myList.add(tempList)
+            } else {
+                tempList.add(item)
+                myList.add(tempList)
+            }
+        }
+        Log.i(TAG, "input list: $myList")
+
+        var cmdStr = "firestoreDb.collection("
+        if (myList.size == 1) {
+            myList[0].forEach { subStep ->
+                if (subStep.contains("@") && subStep.contains("=")) {
+                    var tempSubStepList = subStep.drop(1).split("=")
+                    cmdStr += "whereEqualTo('${tempSubStepList[0]}', ${tempSubStepList[1]})."
+                } else if (subStep.contains("contains")) {
+                    cmdStr += "whereIn('${subStep.substringAfter("@").substringBefore(",")}', mutableListOf('${subStep.substringAfter("'").substringBefore("'")}'))."
+                } else {
+                    cmdStr += "'${subStep}')."
+                }
+            }
+        } else if (myList.size == 3) {
+            cmdStr += "'${myList[0][0]}')."
+            myList[1].forEach { subStep ->
+                if (subStep.contains("::")) {
+                    var tempSubStepList = subStep.replace("::",":").split(":")
+                    cmdStr += "${tempSubStepList[1]}("
+                } else if (subStep.contains("@") && subStep.contains("=")) {
+                    var tempSubStepList = subStep.drop(1).split("=")
+                    if (tempSubStepList[0] == "id") {
+                        cmdStr += "${tempSubStepList[1]})."
+                    } else {
+                        cmdStr += "'${tempSubStepList[0]}', ${tempSubStepList[1]})."
+                    }
+                }
+            }
+            myList[2].forEach { subStep ->
+                if (subStep.contains("::")) {
+                    var tempSubStepList = subStep.replace("::",":").split(":")
+                    cmdStr += "${tempSubStepList[1]}("
+                } else if (subStep.contains("@") && subStep.contains("=")) {
+                    var tempSubStepList = subStep.drop(1).split("=")
+                    if (tempSubStepList[0] == "id") {
+                        cmdStr += "${tempSubStepList[1]})."
+                    } else {
+                        cmdStr += "whereEqualTo('${tempSubStepList[0]}', ${tempSubStepList[1]})."
+                    }
+                } else if (subStep.contains("contains")) {
+                    cmdStr += "whereIn('${subStep.substringAfter("@").substringBefore(",")}', mutableListOf('${subStep.substringAfter("'").substringBefore("'")}'))."
+                } else {
+                    cmdStr += "'${subStep}')."
+                }
+            }
+        } else {
+            myList.forEach { step ->
+                if (step.size == 1) {
+                    cmdStr += "'${step[0]}')."
+                } else {
+                    step.forEach { subStep ->
+                        if (subStep.contains("::")) {
+                            var tempSubStepList = subStep.replace("::",":").split(":")
+                            cmdStr += "${tempSubStepList[1]}("
+                        } else if (subStep.contains("@") && subStep.contains("=")) {
+                            var tempSubStepList = subStep.drop(1).split("=")
+                            if (tempSubStepList[0] == "id") {
+                                cmdStr += "${tempSubStepList[1]})."
+                            } else {
+                                cmdStr += "'${tempSubStepList[0]}', ${tempSubStepList[1]})."
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        cmdStr += "get()"
+        return cmdStr
+    }
+
+    private fun executeFirebaseCommand (cmdStr: String) {
+        var cmdList = cmdStr.split(".").drop(1).dropLast(1)
+        Log.i(TAG, "cmd list: $cmdList")
+        var colCount = 0
+        var docCount = 0
+        cmdList.forEach { item ->
+            if (item.contains("collection")) {
+                colCount += 1
+            } else if (item.contains("document")) {
+                docCount += 1
+            }
+        }
+        Log.i(TAG, "colCount: $colCount")
+        Log.i(TAG, "docCount: $docCount")
+        var myObjList = mutableListOf<Any>()
+        var myIdList = mutableListOf<String>()
+
+        if (colCount == 1) {
+            if (docCount == 0) {
+                if (cmdList.size == 1) {
+                    firestoreDb
+                        .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                        .get()
+                        .addOnSuccessListener { snapshots ->
+                            snapshots.forEach { shot ->
+                                myObjList.add(shot.getData())
+                                myIdList.add(shot.id)
+                            }
+                            Log.i(TAG, "$myIdList")
+                            Log.i(TAG, "$myObjList")
+                        }
+                } else if (cmdList.size == 2) {
+                    if (cmdList[1].contains("whereIn")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .whereIn("${cmdList[1].split(',')[0].substringAfter("'").substringBefore("'")}", mutableListOf("${cmdList[1].split(',')[1].substringAfter("'").substringBefore("'")}"))
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myObjList.add(shot.getData())
+                                    myIdList.add(shot.id)
+                                }
+                                Log.i(TAG, "$myIdList")
+                                Log.i(TAG, "$myObjList")
+                            }
+                    } else if (cmdList[1].contains("whereEqualTo")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .whereEqualTo("${cmdList[1].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[1].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myObjList.add(shot.getData())
+                                    myIdList.add(shot.id)
+                                }
+                                Log.i(TAG, "$myIdList")
+                                Log.i(TAG, "$myObjList")
+                            }
+                    }
+                } else if (cmdList.size == 3) {
+                    if (cmdList[1].contains("whereIn") && cmdList[2].contains("whereEqualTo")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .whereIn("${cmdList[1].split(',')[0].substringAfter("'").substringBefore("'")}", mutableListOf("${cmdList[1].split(',')[1].substringAfter("'").substringBefore("'")}"))
+                            .whereEqualTo("${cmdList[2].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[2].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myObjList.add(shot.getData())
+                                    myIdList.add(shot.id)
+                                }
+                                Log.i(TAG, "$myIdList")
+                                Log.i(TAG, "$myObjList")
+                            }
+                    } else if (cmdList[1].contains("whereEqualTo") && cmdList[2].contains("whereIn")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .whereEqualTo("${cmdList[1].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[1].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .whereIn("${cmdList[2].split(',')[0].substringAfter("'").substringBefore("'")}", mutableListOf("${cmdList[2].split(',')[1].substringAfter("'").substringBefore("'")}"))
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myObjList.add(shot.getData())
+                                    myIdList.add(shot.id)
+                                }
+                                Log.i(TAG, "$myIdList")
+                                Log.i(TAG, "$myObjList")
+                            }
+                    }
+                }
+            } else if (docCount == 1) {
+                firestoreDb
+                    .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                    .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                    .get()
+                    .addOnSuccessListener { shot ->
+                        myObjList.add(shot.getData()!!)
+                        myIdList.add(shot.id)
+                        Log.i(TAG, "$myIdList")
+                        Log.i(TAG, "$myObjList")
+                    }
+            }
+        } else if (colCount == 2) {
+            if (docCount == 1) {
+                if (cmdList.size == 3) {
+                    firestoreDb
+                        .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                        .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                        .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                        .get()
+                        .addOnSuccessListener { snapshots ->
+                            snapshots.forEach { shot ->
+                                myObjList.add(shot.getData())
+                                myIdList.add(shot.id)
+                            }
+                            Log.i(TAG, "$myIdList")
+                            Log.i(TAG, "$myObjList")
+                        }
+                } else if (cmdList.size == 4) {
+                    if (cmdList[3].contains("whereIn")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                            .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                            .whereIn("${cmdList[3].split(',')[0].substringAfter("'").substringBefore("'")}", mutableListOf("${cmdList[3].split(',')[1].substringAfter("'").substringBefore("'")}"))
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myObjList.add(shot.getData())
+                                    myIdList.add(shot.id)
+                                }
+                                Log.i(TAG, "$myIdList")
+                                Log.i(TAG, "$myObjList")
+                            }
+                    } else if (cmdList[3].contains("whereEqualTo")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                            .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                            .whereEqualTo("${cmdList[3].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[3].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myObjList.add(shot.getData())
+                                    myIdList.add(shot.id)
+                                }
+                                Log.i(TAG, "$myIdList")
+                                Log.i(TAG, "$myObjList")
+                            }
+                    }
+                } else if (cmdList.size == 5) {
+                    if (cmdList[3].contains("whereIn") && cmdList[4].contains("whereEqualTo")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                            .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                            .whereIn("${cmdList[3].split(',')[0].substringAfter("'").substringBefore("'")}", mutableListOf("${cmdList[3].split(',')[1].substringAfter("'").substringBefore("'")}"))
+                            .whereEqualTo("${cmdList[4].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[4].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myObjList.add(shot.getData())
+                                    myIdList.add(shot.id)
+                                }
+                                Log.i(TAG, "$myIdList")
+                                Log.i(TAG, "$myObjList")
+                            }
+                    } else if (cmdList[3].contains("whereEqualTo") && cmdList[4].contains("whereIn")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                            .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                            .whereEqualTo("${cmdList[3].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[3].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .whereIn("${cmdList[4].split(',')[0].substringAfter("'").substringBefore("'")}", mutableListOf("${cmdList[4].split(',')[1].substringAfter("'").substringBefore("'")}"))
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myObjList.add(shot.getData())
+                                    myIdList.add(shot.id)
+                                }
+                                Log.i(TAG, "$myIdList")
+                                Log.i(TAG, "$myObjList")
+                            }
+                    }
+                }
+            } else if (docCount == 2) {
+                firestoreDb
+                    .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                    .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                    .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                    .document("${cmdList[3].substringAfter("'").substringBefore("'")}")
+                    .get()
+                    .addOnSuccessListener { shot ->
+                        myObjList.add(shot.getData()!!)
+                        myIdList.add(shot.id)
+                        Log.i(TAG, "$myIdList")
+                        Log.i(TAG, "$myObjList")
+                    }
+            }
+        }
     }
 
 }

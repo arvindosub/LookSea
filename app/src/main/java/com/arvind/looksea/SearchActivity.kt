@@ -128,10 +128,7 @@ class SearchActivity : AppCompatActivity() {
                                                                     .get()
                                                                     .addOnSuccessListener { friendSnapshots ->
                                                                         friendSnapshots.forEach { doc ->
-                                                                            var myPost =
-                                                                                doc.toObject(
-                                                                                    Item::class.java
-                                                                                )
+                                                                            var myPost = doc.toObject(Item::class.java)
                                                                             Log.i(TAG, "Post ID: ${doc.id}")
                                                                             Log.i(TAG, "Post: $myPost")
 

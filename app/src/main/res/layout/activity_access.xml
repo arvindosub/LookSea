@@ -34,6 +34,31 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:text="XPath Code"
+            android:textSize="18dp"
+            android:textStyle="bold"
+            android:textColor="@color/black" />
+
+        <EditText
+            android:id="@+id/etXpathCode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="20dp"
+            android:textColorHint="@color/black" />
+
+        <Button
+            android:id="@+id/btnSubmitXpath"
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:clickable="true"
+            android:text="Submit XPath"
+            android:backgroundTint="@color/colorSecondaryVariant"
+            android:textColor="@color/black"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:text="User"
             android:textSize="18dp"
@@ -103,31 +128,6 @@
             android:layout_gravity="center"
             android:clickable="true"
             android:text="Submit" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="XPath Code"
-            android:textSize="18dp"
-            android:textStyle="bold"
-            android:textColor="@color/black" />
-
-        <EditText
-            android:id="@+id/etXpathCode"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textSize="20dp"
-            android:textColorHint="@color/black" />
-
-        <Button
-            android:id="@+id/btnSubmitXpath"
-            android:layout_width="150dp"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:clickable="true"
-            android:text="Submit XPath"
-            android:backgroundTint="@color/colorSecondaryVariant"
-            android:textColor="@color/black"/>
 
     </LinearLayout>
 
