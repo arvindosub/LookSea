@@ -600,7 +600,30 @@ class AccessActivity : AppCompatActivity() {
         // ## searching
         // all users from japan --- //artifacts[@type='user'][contains(@description, 'japan')]
         // all friends of a certain user --- //links/child::document[@id=userId]/child::collection[@id='friend'][contains(@name, 'classmate')]
-        var expression = "//artifacts[@type='user'][contains(@description, 'japan')]"
+        // =========
+        // [[[ type 1 queries -- more akin to xpath on xml ]]]
+        // - //document[@id=myself]/sibling::document[contains(@description, 'japan')] --- all users from japan, using self as starting pt
+        // - //collection[@id='artifacts']/child::document[contains(@description, 'japan')] --- all users from japan, using selected element (collection named 'artifacts') as starting pt
+        // - //document[@id=myself][@owner=myfriend]/parent::collection[@id=friend] --- all friends of a particular friend, using self as starting pt
+        // - //document[@id=auser]/child::collection[@id=friend] --- all friends of a certain user, using selected element (document with a user as id) as starting pt
+        // challenges:
+        //      requires knowledge of data storage structure to navigate between elements and query correctly. this takes away from the 'random search' feel
+        //      not always possible to specify which collection to query unless we force the start pt to be a collection. ties back in with the above disadvantage.
+        //
+        // [[[ type 2 queries -- treat queries as a graph search with self node in the graph picked up to form a tree ]]]
+        // - //user[@id=myself]/descendant::user[contains(@description, 'japan')] --- all users from japan, start point will always be specific artifact (DONE)
+        // - //user[@id=myself]/child::friend[@id='4Lbyyznfw9YASlVXMhcG7fRKOZt2']/descendant::friend --- all friends of a particular friend (DONE)
+        // - //user[@id='4Lbyyznfw9YASlVXMhcG7fRKOZt2']/descendant::friend --- all friends of a certain user (DONE)
+        // - //user[@id='oxywVSc4DrOngH6VvJIxSSAYkeW2']/descendant::friend[@type='classmate'] --- all classmates of a certain user (DONE)
+        // challenges:
+        //      probably harder to decipher as no database storage-specific terms are used.
+        //      hard to represent the relationship portion of ERM in the hierarchical form required for XML/XPath. might need to treat relationships as a 'node' between two entities.
+        //
+        // VERDICT: PROBABLY SHOULD TRANSFORM INTO TYPE 2. SUFFICIENT ABSTRACTION TO REMOVE ANYTHING SPECIFIC TO DATABASE STRUCTURE.
+        // NEXT STEP IS TO PARSE TYPE-2 QUERIES INTO FIREBASE QUERIES.
+
+
+        var expression = "//user[@id=myself]/descendant::user[contains(@description, 'japan')]"
         var cmdStr = getCommandString(expression)
         Log.i(TAG, "cmdStr: $cmdStr")
         executeFirebaseCommand(cmdStr)
@@ -614,6 +637,7 @@ class AccessActivity : AppCompatActivity() {
     private fun getCommandString (expression: String): String {
         var items = expression.drop(2).split('/')
         var myList = mutableListOf<MutableList<String>>()
+        var startPt = mutableListOf<String>()
         items.forEach { item ->
             var tempList = mutableListOf<String>()
             if (item.contains(']')) {
@@ -628,6 +652,15 @@ class AccessActivity : AppCompatActivity() {
                 myList.add(tempList)
             }
         }
+        myList[0].forEach { item ->
+            if (item.contains('@')) {
+                startPt.add(item.split('=')[1])
+            } else {
+                startPt.add(item)
+            }
+        }
+        myList.removeAt(0)
+        Log.i(TAG, "first item: $startPt")
         Log.i(TAG, "input list: $myList")
 
         var cmdStr = "firestoreDb.collection("
@@ -635,63 +668,50 @@ class AccessActivity : AppCompatActivity() {
             myList[0].forEach { subStep ->
                 if (subStep.contains("@") && subStep.contains("=")) {
                     var tempSubStepList = subStep.drop(1).split("=")
-                    cmdStr += "whereEqualTo('${tempSubStepList[0]}', ${tempSubStepList[1]})."
+                    if (tempSubStepList[0] == "type") {
+                        cmdStr += "whereEqualTo('name', '${subStep.substringAfter("'").substringBefore("'")}')."
+                    } else {
+                        cmdStr += "whereEqualTo('${tempSubStepList[0]}', '${subStep.substringAfter("'").substringBefore("'")}')."
+                    }
                 } else if (subStep.contains("contains")) {
                     cmdStr += "whereIn('${subStep.substringAfter("@").substringBefore(",")}', mutableListOf('${subStep.substringAfter("'").substringBefore("'")}'))."
                 } else {
-                    cmdStr += "'${subStep}')."
+                    if (subStep.contains("descendant")) {
+                        var tempSubStepList = subStep.replace("::",":").split(":")
+                        if (subStep.contains("user")) {
+                            cmdStr += "'artifacts').whereEqualTo('type', '${tempSubStepList[1]}')."
+                        } else {
+                            cmdStr += "'links').document('${startPt[1].substringAfter("'").substringBefore("'")}').collection('${tempSubStepList[1]}')."
+                        }
+                    }
                 }
             }
-        } else if (myList.size == 3) {
-            cmdStr += "'${myList[0][0]}')."
+        } else if (myList.size == 2) {
+            myList[0].forEach { subStep ->
+                if (subStep.contains("::")) {
+                    var tempSubStepList = subStep.replace("::",":").split(":")
+                    if (tempSubStepList[0] != "descendant" && tempSubStepList[1] !in mutableListOf<String>("user", "post", "image", "video", "audio", "text")) {
+                        cmdStr += "'links')."
+                    }
+                } else if (subStep.contains("@") && subStep.contains("=")) {
+                    cmdStr += "document('${subStep.substringAfter("'").substringBefore("'")}')."
+                }
+            }
             myList[1].forEach { subStep ->
                 if (subStep.contains("::")) {
                     var tempSubStepList = subStep.replace("::",":").split(":")
-                    cmdStr += "${tempSubStepList[1]}("
+                    if (tempSubStepList[0] == "descendant") {
+                        cmdStr += "collection('${tempSubStepList[1]}')."
+                    }
                 } else if (subStep.contains("@") && subStep.contains("=")) {
                     var tempSubStepList = subStep.drop(1).split("=")
                     if (tempSubStepList[0] == "id") {
-                        cmdStr += "${tempSubStepList[1]})."
+                        cmdStr += "document('${tempSubStepList[1]}')."
                     } else {
-                        cmdStr += "'${tempSubStepList[0]}', ${tempSubStepList[1]})."
+                        cmdStr += "whereEqualTo('${tempSubStepList[0]}', '${tempSubStepList[1].substringAfter("'").substringBefore("'")}')."
                     }
-                }
-            }
-            myList[2].forEach { subStep ->
-                if (subStep.contains("::")) {
-                    var tempSubStepList = subStep.replace("::",":").split(":")
-                    cmdStr += "${tempSubStepList[1]}("
-                } else if (subStep.contains("@") && subStep.contains("=")) {
-                    var tempSubStepList = subStep.drop(1).split("=")
-                    if (tempSubStepList[0] == "id") {
-                        cmdStr += "${tempSubStepList[1]})."
-                    } else {
-                        cmdStr += "whereEqualTo('${tempSubStepList[0]}', ${tempSubStepList[1]})."
-                    }
-                } else if (subStep.contains("contains")) {
+                } else if (subStep.contains("contains") && subStep.contains("=")) {
                     cmdStr += "whereIn('${subStep.substringAfter("@").substringBefore(",")}', mutableListOf('${subStep.substringAfter("'").substringBefore("'")}'))."
-                } else {
-                    cmdStr += "'${subStep}')."
-                }
-            }
-        } else {
-            myList.forEach { step ->
-                if (step.size == 1) {
-                    cmdStr += "'${step[0]}')."
-                } else {
-                    step.forEach { subStep ->
-                        if (subStep.contains("::")) {
-                            var tempSubStepList = subStep.replace("::",":").split(":")
-                            cmdStr += "${tempSubStepList[1]}("
-                        } else if (subStep.contains("@") && subStep.contains("=")) {
-                            var tempSubStepList = subStep.drop(1).split("=")
-                            if (tempSubStepList[0] == "id") {
-                                cmdStr += "${tempSubStepList[1]})."
-                            } else {
-                                cmdStr += "'${tempSubStepList[0]}', ${tempSubStepList[1]})."
-                            }
-                        }
-                    }
                 }
             }
         }
