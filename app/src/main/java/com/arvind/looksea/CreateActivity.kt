@@ -342,7 +342,7 @@ class CreateActivity : AppCompatActivity() {
                 .addOnSuccessListener { postCreationTask ->
                     var link = Link(
                         "owned",
-                        "$userId"
+                        "$userId", "$userId", "nil", arrayListOf<String>()
                     )
                     firestoreDb.collection("links").document(postCreationTask.id)
                         .collection("owned").document(userId as String).set(link)
@@ -434,7 +434,7 @@ class CreateActivity : AppCompatActivity() {
                 }.addOnSuccessListener { postCreationTask ->
                     var link = Link(
                         "owned",
-                        "$userId"
+                        "$userId", "$userId", "nil", arrayListOf<String>()
                     )
                     firestoreDb.collection("links").document(postCreationTask.id)
                         .collection("owned").document(userId as String).set(link)

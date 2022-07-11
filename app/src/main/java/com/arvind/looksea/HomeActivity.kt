@@ -225,7 +225,9 @@ open class HomeActivity : AppCompatActivity() {
                                 Toast.makeText(this, "Liked", Toast.LENGTH_SHORT).show()
                                 var link = Link(
                                     "liked",
-                                    "$userId"
+                                    "${post.userId}", "$userId",
+                                    "nil",
+                                    arrayListOf<String>()
                                 )
                                 firestoreDb.collection("links").document(userId as String)
                                     .collection("liked").document(postId as String).set(link)

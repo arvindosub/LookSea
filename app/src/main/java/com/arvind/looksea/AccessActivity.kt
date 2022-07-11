@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
+import androidx.core.view.isVisible
 import com.arvind.looksea.models.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -19,15 +20,19 @@ private const val TAG = "AccessActivity"
 class AccessActivity : AppCompatActivity() {
     private var signedInUser: User? = null
     private var userId: String? = ""
+    private var artifactId: String? = ""
+    private var ownerId: String? = ""
     private lateinit var firestoreDb: FirebaseFirestore
     private lateinit var binding: ActivityAccessBinding
-    private lateinit var search: MutableList<Item>
-    private lateinit var adapterSearch: ItemAdapter
+    private lateinit var idSearch: MutableList<Item>
+    private lateinit var adapterIds: ItemAdapter
     private var searchList = mutableListOf<Item>()
     private var searchIdList = mutableListOf<String>()
     private var usernameList = mutableListOf<String>()
     private var viewableIds = mutableListOf<String>()
     private var selUserId: String? = ""
+    private var selUser: Item? = null
+    private var xpathIdList = mutableListOf<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,12 +40,14 @@ class AccessActivity : AppCompatActivity() {
         binding = ActivityAccessBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        search = mutableListOf()
-        adapterSearch = ItemAdapter(this, search)
-        binding.rvSearch.adapter = adapterSearch
-        binding.rvSearch.layoutManager = LinearLayoutManager(this)
+        idSearch = mutableListOf()
+        adapterIds = ItemAdapter(this, idSearch)
+        binding.rvIds.adapter = adapterIds
+        binding.rvIds.layoutManager = LinearLayoutManager(this)
 
         userId = FirebaseAuth.getInstance().currentUser?.uid as String
+        binding.etIds.text.clear()
+        binding.rvIds.isVisible = false
 
         firestoreDb = FirebaseFirestore.getInstance()
         firestoreDb.collection("artifacts")
@@ -92,12 +99,14 @@ class AccessActivity : AppCompatActivity() {
                                 Log.i(TAG, "FoF List: $fofList")
                                 Log.i(TAG, "Granular Read List: $granularReadList")
 
-                                binding.etSearch.addTextChangedListener {
+                                binding.etIds.addTextChangedListener {
+                                    binding.rvIds.isVisible = true
                                     if (it.toString() == "") {
+                                        binding.rvIds.isVisible = false
                                         searchList.clear()
                                         searchIdList.clear()
-                                        search.clear()
-                                        adapterSearch.notifyDataSetChanged()
+                                        idSearch.clear()
+                                        adapterIds.notifyDataSetChanged()
                                     } else if (it.toString().contains("/friendswith ")) {
                                         searchList.clear()
                                         searchIdList.clear()
@@ -174,9 +183,9 @@ class AccessActivity : AppCompatActivity() {
                                                                                 viewableIds.add(doc.id)
                                                                             }
                                                                         }
-                                                                        search.clear()
-                                                                        search.addAll(searchList)
-                                                                        adapterSearch.notifyDataSetChanged()
+                                                                        idSearch.clear()
+                                                                        idSearch.addAll(searchList)
+                                                                        adapterIds.notifyDataSetChanged()
                                                                         Log.i(TAG, "zz $searchList")
                                                                     }
                                                             }
@@ -257,9 +266,9 @@ class AccessActivity : AppCompatActivity() {
                                                                                 viewableIds.add(doc.id)
                                                                             }
                                                                         }
-                                                                        search.clear()
-                                                                        search.addAll(searchList)
-                                                                        adapterSearch.notifyDataSetChanged()
+                                                                        idSearch.clear()
+                                                                        idSearch.addAll(searchList)
+                                                                        adapterIds.notifyDataSetChanged()
                                                                         Log.i(TAG, "zz $searchList")
                                                                     }
                                                             }
@@ -322,9 +331,9 @@ class AccessActivity : AppCompatActivity() {
                                                             viewableIds.add(doc.id)
                                                         }
                                                     }
-                                                    search.clear()
-                                                    search.addAll(searchList)
-                                                    adapterSearch.notifyDataSetChanged()
+                                                    idSearch.clear()
+                                                    idSearch.addAll(searchList)
+                                                    adapterIds.notifyDataSetChanged()
                                                     Log.i(TAG, "zz $searchList")
                                                 }
                                         } else if (searchTerm != "") {
@@ -394,9 +403,9 @@ class AccessActivity : AppCompatActivity() {
                                                             }
                                                         }
                                                     }
-                                                    search.clear()
-                                                    search.addAll(searchList)
-                                                    adapterSearch.notifyDataSetChanged()
+                                                    idSearch.clear()
+                                                    idSearch.addAll(searchList)
+                                                    adapterIds.notifyDataSetChanged()
                                                     Log.i(TAG, "zz $searchList")
                                                 }
                                         }
@@ -497,9 +506,9 @@ class AccessActivity : AppCompatActivity() {
                                                         }
                                                     }
                                                 }
-                                                search.clear()
-                                                search.addAll(searchList)
-                                                adapterSearch.notifyDataSetChanged()
+                                                idSearch.clear()
+                                                idSearch.addAll(searchList)
+                                                adapterIds.notifyDataSetChanged()
                                                 Log.i(TAG, "zz $searchList")
                                                 Log.i(TAG, "zz $searchIdList")
                                             }
@@ -507,24 +516,25 @@ class AccessActivity : AppCompatActivity() {
                                 }
                             }
                     }
-                adapterSearch.setOnItemClickListener(object : ItemAdapter.onItemClickListener {
+                adapterIds.setOnItemClickListener(object : ItemAdapter.onItemClickListener {
                     override fun onItemClick(position: Int) {
                         if (searchIdList[position] in viewableIds) {
                             selUserId = searchIdList[position]
-                            binding.tvSelectedUser.setText(usernameList[position])
-                            Log.i(TAG, "${usernameList[position]}")
+                            selUser = searchList[position]
+                            binding.etXpathCode.text.append("'$selUserId'")
+                            binding.etIds.text.clear()
                         } else {
                             Toast.makeText(this@AccessActivity, "You do not have permission to access this page!", Toast.LENGTH_SHORT).show()
                         }
                     }
                 })
 
-                binding.btnSubmit.setOnClickListener {
-                    handleSubmitButtonClick()
-                }
-
                 binding.btnSubmitXpath.setOnClickListener {
                     handleSubmitXpathButtonClick()
+                }
+
+                binding.btnSubmit.setOnClickListener {
+                    handleSubmitButtonClick()
                 }
 
             }
@@ -533,105 +543,63 @@ class AccessActivity : AppCompatActivity() {
             }
     }
 
-    private fun handleSubmitButtonClick() {
-        binding.btnSubmit.isEnabled = false
-        var artifactId = intent.getStringExtra(EXTRA_ARTIFACTID)
-        if (artifactId == null) {
+    private fun handleSubmitXpathButtonClick () {
+        binding.btnSubmitXpath.isEnabled = false
+        artifactId = intent.getStringExtra(EXTRA_ARTIFACTID)
+        if (artifactId == null || artifactId == "") {
             artifactId = userId.toString()
         }
-        Log.i(TAG, "$artifactId")
-        var accessCode = binding.etAccessCode.text.toString()
-        accessCode = accessCode.replace("\\s".toRegex(), "")
-        var codeList = accessCode.split('/')
-        Log.i(TAG, "$codeList")
+        firestoreDb.collection("artifacts").document(artifactId.toString())
+            .get()
+            .addOnSuccessListener { myart ->
+                if (artifactId.toString().length == 28) {
+                    ownerId = artifactId.toString()
+                } else {
+                    ownerId = myart.toObject(Item::class.java)?.userId.toString()
+                }
+                Log.i(TAG, "artifactId: ${artifactId.toString()}")
+                Log.i(TAG, "ownerId: ${ownerId.toString()}")
 
-        firestoreDb.collection("links").document(selUserId as String)
-            .collection("ban").document(artifactId as String).delete()
-        firestoreDb.collection("links").document(selUserId as String)
-            .collection("read").document(artifactId as String).delete()
-        firestoreDb.collection("links").document(selUserId as String)
-            .collection("update").document(artifactId as String).delete()
-        firestoreDb.collection("links").document(selUserId as String)
-            .collection("delete").document(artifactId as String).delete()
-        firestoreDb.collection("links").document(selUserId as String)
-            .collection("configure").document(artifactId as String).delete()
+                var expression = binding.etXpathCode.text.toString()
+                var cmdStr = getCommandString(expression)
+                Log.i(TAG, "cmdStr: $cmdStr")
+                executeFirebaseCommand(cmdStr)
+                binding.btnSubmitXpath.isEnabled = true
+            }
 
-        if ("ban" in codeList) {
-            firestoreDb.collection("links").document(selUserId as String)
-                .collection("ban").document(artifactId as String).set(Link("ban", "$userId"))
-        }
-        if ("read" in codeList) {
-            firestoreDb.collection("links").document(selUserId as String)
-                .collection("read").document(artifactId as String).set(Link("read", "$userId"))
-        }
-        if ("update" in codeList) {
-            firestoreDb.collection("links").document(selUserId as String)
-                .collection("read").document(artifactId as String).set(Link("read", "$userId"))
-            firestoreDb.collection("links").document(selUserId as String)
-                .collection("update").document(artifactId).set(Link("update", "$userId"))
-        }
-        if ("delete" in codeList) {
-            firestoreDb.collection("links").document(selUserId as String)
-                .collection("read").document(artifactId as String).set(Link("read", "$userId"))
-            firestoreDb.collection("links").document(selUserId as String)
-                .collection("delete").document(artifactId).set(Link("delete","$userId"))
-        }
-        if ("configure" in codeList) {
-            firestoreDb.collection("links").document(selUserId as String)
-                .collection("read").document(artifactId as String).set(Link("read", "$userId"))
-            firestoreDb.collection("links").document(selUserId as String)
-                .collection("configure").document(artifactId as String).set(Link("configure","$userId"))
-        }
-
-        binding.btnSubmit.isEnabled = true
-        Toast.makeText(this, "Access Configured!", Toast.LENGTH_SHORT).show()
-        finish()
-
+        //user[@id='oxywVSc4DrOngH6VvJIxSSAYkeW2']/descendant::user[contains(@description, 'japan')] --- all users from japan, start point will always be specific artifact (DONE)
+        //user[@id='oxywVSc4DrOngH6VvJIxSSAYkeW2']/child::friend[@id='4Lbyyznfw9YASlVXMhcG7fRKOZt2']/descendant::friend --- all friends of a particular friend (DONE)
+        //user[@id='4Lbyyznfw9YASlVXMhcG7fRKOZt2']/descendant::friend --- all friends of a certain user (DONE)
+        //user[@id='oxywVSc4DrOngH6VvJIxSSAYkeW2']/descendant::friend[@value='classmate'] --- all classmates of a certain user (DONE)
+        //user[@id='oxywVSc4DrOngH6VvJIxSSAYkeW2']/child::liked --- all posts liked by a certain user (DONE)
+        //user[@id='oxywVSc4DrOngH6VvJIxSSAYkeW2']/child::commented[@owner='4Lbyyznfw9YASlVXMhcG7fRKOZt2'] --- all posts commented by a certain user which belong to another user (DONE)
+        //user[@id='oxywVSc4DrOngH6VvJIxSSAYkeW2']/child::commented[@owner='4Lbyyznfw9YASlVXMhcG7fRKOZt2'][contains(@keywords, 'kitchen')] --- all posts commented by a certain user which belong to another user, of a certain subject (DONE)
     }
 
-    private fun handleSubmitXpathButtonClick() {
-        binding.btnSubmitXpath.isEnabled = false
-        var artifactId = intent.getStringExtra(EXTRA_ARTIFACTID)
-        if (artifactId == null) {
-            artifactId = userId.toString()
+    private fun handleSubmitButtonClick () {
+        binding.btnSubmit.isEnabled = false
+        var accessList = binding.etAccess.text.drop(1).split('/')
+        Log.i(TAG, "accessList: $accessList")
+        xpathIdList.forEach { id ->
+            firestoreDb.collection("links").document(id)
+                .collection("ban").document(artifactId.toString()).delete()
+            firestoreDb.collection("links").document(id)
+                .collection("read").document(artifactId.toString()).delete()
+            firestoreDb.collection("links").document(id)
+                .collection("update").document(artifactId.toString()).delete()
+            firestoreDb.collection("links").document(id)
+                .collection("delete").document(artifactId.toString()).delete()
+            firestoreDb.collection("links").document(id)
+                .collection("configure").document(artifactId.toString()).delete()
+
+            accessList.forEach { access ->
+                firestoreDb.collection("links").document(id)
+                    .collection("$access").document(artifactId.toString()).set(Link("$access", "${ownerId.toString()}", "$id", "nil", arrayListOf<String>()))
+            }
         }
-        Log.i(TAG, "artifactId: $artifactId")
-        // var expression = binding.etXpathCode.text.toString()
-        // ## searching
-        // all users from japan --- //artifacts[@type='user'][contains(@description, 'japan')]
-        // all friends of a certain user --- //links/child::document[@id=userId]/child::collection[@id='friend'][contains(@name, 'classmate')]
-        // =========
-        // [[[ type 1 queries -- more akin to xpath on xml ]]]
-        // - //document[@id=myself]/sibling::document[contains(@description, 'japan')] --- all users from japan, using self as starting pt
-        // - //collection[@id='artifacts']/child::document[contains(@description, 'japan')] --- all users from japan, using selected element (collection named 'artifacts') as starting pt
-        // - //document[@id=myself][@owner=myfriend]/parent::collection[@id=friend] --- all friends of a particular friend, using self as starting pt
-        // - //document[@id=auser]/child::collection[@id=friend] --- all friends of a certain user, using selected element (document with a user as id) as starting pt
-        // challenges:
-        //      requires knowledge of data storage structure to navigate between elements and query correctly. this takes away from the 'random search' feel
-        //      not always possible to specify which collection to query unless we force the start pt to be a collection. ties back in with the above disadvantage.
-        //
-        // [[[ type 2 queries -- treat queries as a graph search with self node in the graph picked up to form a tree ]]]
-        // - //user[@id=myself]/descendant::user[contains(@description, 'japan')] --- all users from japan, start point will always be specific artifact (DONE)
-        // - //user[@id=myself]/child::friend[@id='4Lbyyznfw9YASlVXMhcG7fRKOZt2']/descendant::friend --- all friends of a particular friend (DONE)
-        // - //user[@id='4Lbyyznfw9YASlVXMhcG7fRKOZt2']/descendant::friend --- all friends of a certain user (DONE)
-        // - //user[@id='oxywVSc4DrOngH6VvJIxSSAYkeW2']/descendant::friend[@type='classmate'] --- all classmates of a certain user (DONE)
-        // challenges:
-        //      probably harder to decipher as no database storage-specific terms are used.
-        //      hard to represent the relationship portion of ERM in the hierarchical form required for XML/XPath. might need to treat relationships as a 'node' between two entities.
-        //
-        // VERDICT: PROBABLY SHOULD TRANSFORM INTO TYPE 2. SUFFICIENT ABSTRACTION TO REMOVE ANYTHING SPECIFIC TO DATABASE STRUCTURE.
-        // NEXT STEP IS TO PARSE TYPE-2 QUERIES INTO FIREBASE QUERIES.
-
-
-        var expression = "//user[@id=myself]/descendant::user[contains(@description, 'japan')]"
-        var cmdStr = getCommandString(expression)
-        Log.i(TAG, "cmdStr: $cmdStr")
-        executeFirebaseCommand(cmdStr)
-
-        binding.btnSubmitXpath.isEnabled = true
         Toast.makeText(this, "Access Configured!", Toast.LENGTH_SHORT).show()
-        //finish()
-
+        binding.btnSubmit.isEnabled = true
+        finish()
     }
 
     private fun getCommandString (expression: String): String {
@@ -647,12 +615,17 @@ class AccessActivity : AppCompatActivity() {
                     tempList.add(subItem)
                 }
                 myList.add(tempList)
+            } else if (item == "self") {
+                startPt.add("user")
+                startPt.add(userId.toString())
             } else {
                 tempList.add(item)
                 myList.add(tempList)
             }
         }
+        /*
         myList[0].forEach { item ->
+
             if (item.contains('@')) {
                 startPt.add(item.split('=')[1])
             } else {
@@ -660,6 +633,7 @@ class AccessActivity : AppCompatActivity() {
             }
         }
         myList.removeAt(0)
+        */
         Log.i(TAG, "first item: $startPt")
         Log.i(TAG, "input list: $myList")
 
@@ -668,13 +642,14 @@ class AccessActivity : AppCompatActivity() {
             myList[0].forEach { subStep ->
                 if (subStep.contains("@") && subStep.contains("=")) {
                     var tempSubStepList = subStep.drop(1).split("=")
-                    if (tempSubStepList[0] == "type") {
-                        cmdStr += "whereEqualTo('name', '${subStep.substringAfter("'").substringBefore("'")}')."
-                    } else {
-                        cmdStr += "whereEqualTo('${tempSubStepList[0]}', '${subStep.substringAfter("'").substringBefore("'")}')."
-                    }
+                    cmdStr += "whereEqualTo('${tempSubStepList[0]}', '${subStep.substringAfter("'").substringBefore("'")}')."
                 } else if (subStep.contains("contains")) {
-                    cmdStr += "whereIn('${subStep.substringAfter("@").substringBefore(",")}', mutableListOf('${subStep.substringAfter("'").substringBefore("'")}'))."
+                    var subField = subStep.substringAfter("@").substringBefore(",")
+                    if (subField == "keywords") {
+                        cmdStr += "whereArrayContains('$subField', '${subStep.substringAfter("'").substringBefore("'")}')."
+                    } else {
+                        cmdStr += "whereIn('$subField', mutableListOf('${subStep.substringAfter("'").substringBefore("'")}'))."
+                    }
                 } else {
                     if (subStep.contains("descendant")) {
                         var tempSubStepList = subStep.replace("::",":").split(":")
@@ -683,6 +658,9 @@ class AccessActivity : AppCompatActivity() {
                         } else {
                             cmdStr += "'links').document('${startPt[1].substringAfter("'").substringBefore("'")}').collection('${tempSubStepList[1]}')."
                         }
+                    } else if (subStep.contains("child")) {
+                        var tempSubStepList = subStep.replace("::",":").split(":")
+                        cmdStr += "'links').document('${startPt[1].substringAfter("'").substringBefore("'")}').collection('${tempSubStepList[1]}')."
                     }
                 }
             }
@@ -749,6 +727,8 @@ class AccessActivity : AppCompatActivity() {
                             }
                             Log.i(TAG, "$myIdList")
                             Log.i(TAG, "$myObjList")
+                            xpathIdList = myIdList
+                            binding.tvUsers.text = xpathIdList.toString()
                         }
                 } else if (cmdList.size == 2) {
                     if (cmdList[1].contains("whereIn")) {
@@ -763,6 +743,8 @@ class AccessActivity : AppCompatActivity() {
                                 }
                                 Log.i(TAG, "$myIdList")
                                 Log.i(TAG, "$myObjList")
+                                xpathIdList = myIdList
+                                binding.tvUsers.text = xpathIdList.toString()
                             }
                     } else if (cmdList[1].contains("whereEqualTo")) {
                         firestoreDb
@@ -776,6 +758,8 @@ class AccessActivity : AppCompatActivity() {
                                 }
                                 Log.i(TAG, "$myIdList")
                                 Log.i(TAG, "$myObjList")
+                                xpathIdList = myIdList
+                                binding.tvUsers.text = xpathIdList.toString()
                             }
                     }
                 } else if (cmdList.size == 3) {
@@ -792,6 +776,8 @@ class AccessActivity : AppCompatActivity() {
                                 }
                                 Log.i(TAG, "$myIdList")
                                 Log.i(TAG, "$myObjList")
+                                xpathIdList = myIdList
+                                binding.tvUsers.text = xpathIdList.toString()
                             }
                     } else if (cmdList[1].contains("whereEqualTo") && cmdList[2].contains("whereIn")) {
                         firestoreDb
@@ -806,6 +792,8 @@ class AccessActivity : AppCompatActivity() {
                                 }
                                 Log.i(TAG, "$myIdList")
                                 Log.i(TAG, "$myObjList")
+                                xpathIdList = myIdList
+                                binding.tvUsers.text = xpathIdList.toString()
                             }
                     }
                 }
@@ -819,6 +807,8 @@ class AccessActivity : AppCompatActivity() {
                         myIdList.add(shot.id)
                         Log.i(TAG, "$myIdList")
                         Log.i(TAG, "$myObjList")
+                        xpathIdList = myIdList
+                        binding.tvUsers.text = xpathIdList.toString()
                     }
             }
         } else if (colCount == 2) {
@@ -836,6 +826,8 @@ class AccessActivity : AppCompatActivity() {
                             }
                             Log.i(TAG, "$myIdList")
                             Log.i(TAG, "$myObjList")
+                            xpathIdList = myIdList
+                            binding.tvUsers.text = xpathIdList.toString()
                         }
                 } else if (cmdList.size == 4) {
                     if (cmdList[3].contains("whereIn")) {
@@ -852,6 +844,8 @@ class AccessActivity : AppCompatActivity() {
                                 }
                                 Log.i(TAG, "$myIdList")
                                 Log.i(TAG, "$myObjList")
+                                xpathIdList = myIdList
+                                binding.tvUsers.text = xpathIdList.toString()
                             }
                     } else if (cmdList[3].contains("whereEqualTo")) {
                         firestoreDb
@@ -867,6 +861,8 @@ class AccessActivity : AppCompatActivity() {
                                 }
                                 Log.i(TAG, "$myIdList")
                                 Log.i(TAG, "$myObjList")
+                                xpathIdList = myIdList
+                                binding.tvUsers.text = xpathIdList.toString()
                             }
                     }
                 } else if (cmdList.size == 5) {
@@ -885,6 +881,8 @@ class AccessActivity : AppCompatActivity() {
                                 }
                                 Log.i(TAG, "$myIdList")
                                 Log.i(TAG, "$myObjList")
+                                xpathIdList = myIdList
+                                binding.tvUsers.text = xpathIdList.toString()
                             }
                     } else if (cmdList[3].contains("whereEqualTo") && cmdList[4].contains("whereIn")) {
                         firestoreDb
@@ -901,6 +899,80 @@ class AccessActivity : AppCompatActivity() {
                                 }
                                 Log.i(TAG, "$myIdList")
                                 Log.i(TAG, "$myObjList")
+                                xpathIdList = myIdList
+                                binding.tvUsers.text = xpathIdList.toString()
+                            }
+                    } else if (cmdList[3].contains("whereEqualTo") && cmdList[4].contains("whereArrayContains")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                            .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                            .whereEqualTo("${cmdList[3].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[3].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .whereArrayContains("${cmdList[4].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[4].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myObjList.add(shot.getData())
+                                    myIdList.add(shot.id)
+                                }
+                                Log.i(TAG, "$myIdList")
+                                Log.i(TAG, "$myObjList")
+                                xpathIdList = myIdList
+                                binding.tvUsers.text = xpathIdList.toString()
+                            }
+                    } else if (cmdList[3].contains("whereArrayContains") && cmdList[4].contains("whereEqualTo")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                            .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                            .whereArrayContains("${cmdList[3].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[3].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .whereEqualTo("${cmdList[4].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[4].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myObjList.add(shot.getData())
+                                    myIdList.add(shot.id)
+                                }
+                                Log.i(TAG, "$myIdList")
+                                Log.i(TAG, "$myObjList")
+                                xpathIdList = myIdList
+                                binding.tvUsers.text = xpathIdList.toString()
+                            }
+                    } else if (cmdList[3].contains("whereEqualTo") && cmdList[4].contains("whereArrayContains")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                            .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                            .whereIn("${cmdList[3].split(',')[0].substringAfter("'").substringBefore("'")}", mutableListOf("${cmdList[3].split(',')[1].substringAfter("'").substringBefore("'")}"))
+                            .whereArrayContains("${cmdList[4].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[4].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myObjList.add(shot.getData())
+                                    myIdList.add(shot.id)
+                                }
+                                Log.i(TAG, "$myIdList")
+                                Log.i(TAG, "$myObjList")
+                                xpathIdList = myIdList
+                                binding.tvUsers.text = xpathIdList.toString()
+                            }
+                    } else if (cmdList[4].contains("whereEqualTo") && cmdList[3].contains("whereArrayContains")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                            .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                            .whereArrayContains("${cmdList[3].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[3].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .whereIn("${cmdList[4].split(',')[0].substringAfter("'").substringBefore("'")}", mutableListOf("${cmdList[4].split(',')[1].substringAfter("'").substringBefore("'")}"))
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myObjList.add(shot.getData())
+                                    myIdList.add(shot.id)
+                                }
+                                Log.i(TAG, "$myIdList")
+                                Log.i(TAG, "$myObjList")
+                                xpathIdList = myIdList
+                                binding.tvUsers.text = xpathIdList.toString()
                             }
                     }
                 }
@@ -916,6 +988,8 @@ class AccessActivity : AppCompatActivity() {
                         myIdList.add(shot.id)
                         Log.i(TAG, "$myIdList")
                         Log.i(TAG, "$myObjList")
+                        xpathIdList = myIdList
+                        binding.tvUsers.text = xpathIdList.toString()
                     }
             }
         }

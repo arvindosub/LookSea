@@ -58,14 +58,14 @@ class CommentAdapter(val context: Context, private val comments: List<Link>, pri
 
     inner class ViewHolder(itemView: View, commentListener: onCommentClickListener, userListener: onUserClickListener, deleteListener: onDeleteClickListener) : RecyclerView.ViewHolder(itemView) {
         fun bind(comment: Link) {
-            itemView.findViewById<TextView>(R.id.tvComment).text = comment.name
-            if (comment.owner == signedInUserID) {
+            itemView.findViewById<TextView>(R.id.tvComment).text = comment.value
+            if (comment.linkowner == signedInUserID) {
                 itemView.findViewById<ImageButton>(R.id.btnDelete).isVisible = true
             }
 
             firestoreDb = FirebaseFirestore.getInstance()
             firestoreDb.collection("artifacts")
-                .document(comment.owner)
+                .document(comment.linkowner)
                 .get()
                 .addOnSuccessListener { userSnapshot ->
                     var user = userSnapshot.toObject((User::class.java))

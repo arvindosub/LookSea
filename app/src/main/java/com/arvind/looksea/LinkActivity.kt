@@ -29,6 +29,7 @@ class LinkActivity : AppCompatActivity() {
     private var idList = mutableListOf<String>()
     private var viewableIds = mutableListOf<String>()
     private var chosenId: String? = ""
+    private var chosenUserId: String? = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -485,9 +486,13 @@ class LinkActivity : AppCompatActivity() {
                     override fun onItemClick(position: Int) {
                         if (searchIdList[position] in viewableIds) {
                             chosenId = searchIdList[position]
+                            chosenUserId = searchList[position].userId.toString()
                             var myId = searchList[position].username.toString()
-                            binding.etLinkedItem.setText(myId)
-                            Log.i(TAG, "$myId")
+                            if (chosenId.toString().length == 28) {
+                                binding.etLinkedItem.setText("$myId")
+                            } else {
+                                binding.etLinkedItem.setText("$myId's post")
+                            }
                         } else {
                             Toast.makeText(this@LinkActivity, "You do not have permission to link to this page!", Toast.LENGTH_SHORT).show()
                         }
@@ -508,30 +513,27 @@ class LinkActivity : AppCompatActivity() {
         binding.btnSubmit.isEnabled = false
         var artifactId = intent.getStringExtra(EXTRA_ARTIFACTID)
         var searchId = chosenId.toString()
-        var linkName = binding.etLinkName.text.toString()
         var linkCollName = "linked"
         if (searchId.length == 28 && artifactId!!.length == 28) {
             linkCollName = "friend"
         } else if (searchId.length == 28 || artifactId!!.length == 28) {
             linkCollName = "liked"
         }
+
+        var linkName = binding.etLinkName.text.toString()
         if (binding.etLinkName.text.isBlank() || binding.etLinkedItem.text.isBlank()) {
-            Toast.makeText(this, "Using default link names.", Toast.LENGTH_SHORT).show()
-            linkName = "default"
-            Log.i(TAG, "${searchId.length}, ${artifactId!!.length}")
-            if (searchId.length == 28 && artifactId!!.length == 28) {
-                linkName = "friend"
-            } else if (searchId.length == 28 || artifactId!!.length == 28) {
-                linkName = "liked"
-            }
+            linkName = ""
         }
         var linkVal = Link(
-            linkName,
-            "$userId"
+            linkCollName,
+            "$chosenUserId", "$userId", linkName, arrayListOf<String>()
         )
 
         Log.i(TAG, "artifact id: $artifactId")
         Log.i(TAG, "search id: $searchId")
+
+        firestoreDb.collection("links").document(artifactId as String).collection("$linkCollName").document(searchId).delete()
+        firestoreDb.collection("links").document(searchId).collection("$linkCollName").document(artifactId as String).delete()
 
         firestoreDb.collection("links").document(artifactId as String)
             .collection("$linkCollName").document(searchId).set(linkVal)
@@ -539,8 +541,8 @@ class LinkActivity : AppCompatActivity() {
                 artifactId = searchId
                 searchId = intent.getStringExtra(EXTRA_ARTIFACTID).toString()
                 var linkVal = Link(
-                    linkName,
-                    "$userId"
+                    linkCollName,
+                    "$chosenUserId", "$userId", linkName, arrayListOf<String>()
                 )
                 firestoreDb.collection("links").document(artifactId as String)
                     .collection("$linkCollName").document(searchId).set(linkVal)

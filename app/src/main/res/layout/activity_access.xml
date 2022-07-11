@@ -7,9 +7,6 @@
     tools:context=".AccessActivity">
 
     <LinearLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_margin="16dp"
@@ -27,7 +24,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:text="Configure Access"
-            android:textSize="20dp"
+            android:textSize="22dp"
             android:textStyle="bold"
             android:textColor="@color/black" />
 
@@ -35,34 +32,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="XPath Code"
-            android:textSize="18dp"
-            android:textStyle="bold"
-            android:textColor="@color/black" />
-
-        <EditText
-            android:id="@+id/etXpathCode"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
             android:textSize="20dp"
-            android:textColorHint="@color/black" />
-
-        <Button
-            android:id="@+id/btnSubmitXpath"
-            android:layout_width="150dp"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:clickable="true"
-            android:text="Submit XPath"
-            android:backgroundTint="@color/colorSecondaryVariant"
-            android:textColor="@color/black"/>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="User"
-            android:textSize="18dp"
             android:textStyle="bold"
+            android:layout_marginTop="25dp"
             android:textColor="@color/black" />
 
         <LinearLayout
@@ -72,16 +44,14 @@
             android:layout_marginTop="5dp" >
 
             <EditText
-                android:id="@+id/etSearch"
+                android:id="@+id/etXpathCode"
                 android:layout_width="320dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:ems="10"
-                android:hint="search..."
-                android:inputType="text" />
+                android:textSize="16dp"
+                android:textColorHint="@color/black" />
 
             <ImageButton
-                android:id="@+id/btnSearch"
+                android:id="@+id/btnSubmitXpath"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -89,45 +59,62 @@
 
         </LinearLayout>
 
+        <EditText
+            android:id="@+id/etIds"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:ems="10"
+            android:hint="get user id..."
+            android:textSize="12dp"
+            android:inputType="text" />
+
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvSearch"
+            android:id="@+id/rvIds"
             android:layout_width="match_parent"
             android:layout_height="150dp"
             android:layout_marginTop="10dp"
-            android:clickable="true" />
+            android:clickable="true"
+            android:visibility="invisible" />
 
         <TextView
-            android:id="@+id/tvSelectedUser"
+            android:id="@+id/tvUsers"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:textSize="15dp"
+            android:text="Users Selected..."
             android:layout_marginTop="10dp"
-            android:text="Selected User: "
-            android:textSize="18dp"
             android:textColor="@color/black" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="Access Code"
-            android:textSize="18dp"
+            android:text="Set Access"
+            android:textSize="20dp"
             android:textStyle="bold"
+            android:layout_marginTop="25dp"
             android:textColor="@color/black" />
 
         <EditText
-            android:id="@+id/etAccessCode"
+            android:id="@+id/etAccess"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="20dp"
-            android:textColorHint="@color/black" />
+            android:layout_marginTop="10dp"
+            android:ems="10"
+            android:hint="enter access code..."
+            android:textSize="12dp"
+            android:inputType="text" />
 
         <Button
             android:id="@+id/btnSubmit"
             android:layout_width="100dp"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
+            android:layout_marginTop="25dp"
             android:clickable="true"
-            android:text="Submit" />
+            android:text="Submit"
+            android:backgroundTint="@color/colorSecondaryVariant"
+            android:textColor="@color/black"/>
 
     </LinearLayout>
 

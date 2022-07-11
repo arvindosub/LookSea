@@ -32,6 +32,7 @@ private const val TAG = "PostActivity"
 class PostActivity : AppCompatActivity() {
     private var signedInUser: User? = null
     private var userId: String? = ""
+    private var postUserId: String? = ""
     private var post: Post? = null
     private var postId: String? = null
     private var privacy: String? = null
@@ -71,6 +72,7 @@ class PostActivity : AppCompatActivity() {
                         response.forEach { doc ->
                             postId = doc.id
                             post = doc.toObject(Post::class.java)
+                            postUserId = post!!.userId.toString()
                         }
 
                         firestoreDb.collection("links")
@@ -188,7 +190,7 @@ class PostActivity : AppCompatActivity() {
 
                 adapter.setOnUserClickListener(object : CommentAdapter.onUserClickListener {
                     override fun onUserClick(position: Int) {
-                        val thisUser = commentList[position].owner
+                        val thisUser = commentList[position].linkowner
                         firestoreDb.collection("artifacts")
                             .document(thisUser)
                             .get()
@@ -203,7 +205,7 @@ class PostActivity : AppCompatActivity() {
 
                 adapter.setOnDeleteClickListener(object : CommentAdapter.onDeleteClickListener {
                     override fun onDeleteClick(position: Int) {
-                        val thisUser = commentList[position].owner
+                        val thisUser = commentList[position].linkowner
                         firestoreDb.collection("links").document(thisUser)
                             .collection("commented").document(postId as String).delete()
                             .addOnSuccessListener {
@@ -219,7 +221,7 @@ class PostActivity : AppCompatActivity() {
 
                 adapter.setOnCommentClickListener(object : CommentAdapter.onCommentClickListener {
                     override fun onCommentClick(position: Int) {
-                        val thisUser = commentList[position].owner
+                        val thisUser = commentList[position].linkowner
                         firestoreDb.collection("artifacts")
                             .document(thisUser)
                             .get()
@@ -241,8 +243,10 @@ class PostActivity : AppCompatActivity() {
         binding.btnSubmit.isEnabled = false
 
         var linkVal = Link(
+            "commented",
+            "$postUserId", "$userId",
             "${binding.etComment.text}",
-            "$userId"
+            binding.etComment.text.replace(("[^\\w]").toRegex(), " ").split(' ') as ArrayList<String>
         )
 
         firestoreDb.collection("links").document(userId!!)
@@ -260,6 +264,8 @@ class PostActivity : AppCompatActivity() {
                         this@PostActivity.recreate()
                     }
             }
+        binding.etComment.text.clear()
+        binding.btnSubmit.isEnabled = true
     }
 
     private fun handleLinkButtonClick() {
@@ -369,7 +375,9 @@ class PostActivity : AppCompatActivity() {
                                 Toast.makeText(this, "Liked", Toast.LENGTH_SHORT).show()
                                 var link = Link(
                                     "liked",
-                                    "$userId"
+                                    "$postUserId", "$userId",
+                                    "nil",
+                                    arrayListOf<String>()
                                 )
                                 firestoreDb.collection("links").document(userId as String)
                                     .collection("liked").document(postId as String).set(link)
