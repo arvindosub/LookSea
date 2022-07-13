@@ -603,9 +603,11 @@ class AccessActivity : AppCompatActivity() {
     }
 
     private fun getCommandString (expression: String): String {
-        var items = expression.drop(2).split('/')
+        var items = expression.split('/')
         var myList = mutableListOf<MutableList<String>>()
         var startPt = mutableListOf<String>()
+        startPt.add("user")
+        startPt.add(userId.toString())
         items.forEach { item ->
             var tempList = mutableListOf<String>()
             if (item.contains(']')) {
@@ -615,25 +617,11 @@ class AccessActivity : AppCompatActivity() {
                     tempList.add(subItem)
                 }
                 myList.add(tempList)
-            } else if (item == "self") {
-                startPt.add("user")
-                startPt.add(userId.toString())
             } else {
                 tempList.add(item)
                 myList.add(tempList)
             }
         }
-        /*
-        myList[0].forEach { item ->
-
-            if (item.contains('@')) {
-                startPt.add(item.split('=')[1])
-            } else {
-                startPt.add(item)
-            }
-        }
-        myList.removeAt(0)
-        */
         Log.i(TAG, "first item: $startPt")
         Log.i(TAG, "input list: $myList")
 
