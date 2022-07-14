@@ -487,6 +487,9 @@ class LinkActivity : AppCompatActivity() {
                         if (searchIdList[position] in viewableIds) {
                             chosenId = searchIdList[position]
                             chosenUserId = searchList[position].userId.toString()
+                            if (chosenUserId == "") {
+                                chosenUserId = searchIdList[position]
+                            }
                             var myId = searchList[position].username.toString()
                             if (chosenId.toString().length == 28) {
                                 binding.etLinkedItem.setText("$myId")
