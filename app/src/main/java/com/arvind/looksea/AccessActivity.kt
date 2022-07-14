@@ -567,39 +567,12 @@ class AccessActivity : AppCompatActivity() {
                 binding.btnSubmitXpath.isEnabled = true
             }
 
-        //user[@id='oxywVSc4DrOngH6VvJIxSSAYkeW2']/descendant::user[contains(@description, 'japan')] --- all users from japan, start point will always be specific artifact (DONE)
-        //user[@id='oxywVSc4DrOngH6VvJIxSSAYkeW2']/child::friend[@id='4Lbyyznfw9YASlVXMhcG7fRKOZt2']/descendant::friend --- all friends of a particular friend (DONE)
-        //user[@id='4Lbyyznfw9YASlVXMhcG7fRKOZt2']/descendant::friend --- all friends of a certain user (DONE)
-        //user[@id='oxywVSc4DrOngH6VvJIxSSAYkeW2']/descendant::friend[@value='classmate'] --- all classmates of a certain user (DONE)
-        //user[@id='oxywVSc4DrOngH6VvJIxSSAYkeW2']/child::liked --- all posts liked by a certain user (DONE)
-        //user[@id='oxywVSc4DrOngH6VvJIxSSAYkeW2']/child::commented[@owner='4Lbyyznfw9YASlVXMhcG7fRKOZt2'] --- all posts commented by a certain user which belong to another user (DONE)
-        //user[@id='oxywVSc4DrOngH6VvJIxSSAYkeW2']/child::commented[@owner='4Lbyyznfw9YASlVXMhcG7fRKOZt2'][contains(@keywords, 'kitchen')] --- all posts commented by a certain user which belong to another user, of a certain subject (DONE)
-    }
-
-    private fun handleSubmitButtonClick () {
-        binding.btnSubmit.isEnabled = false
-        var accessList = binding.etAccess.text.drop(1).split('/')
-        Log.i(TAG, "accessList: $accessList")
-        xpathIdList.forEach { id ->
-            firestoreDb.collection("links").document(id)
-                .collection("ban").document(artifactId.toString()).delete()
-            firestoreDb.collection("links").document(id)
-                .collection("read").document(artifactId.toString()).delete()
-            firestoreDb.collection("links").document(id)
-                .collection("update").document(artifactId.toString()).delete()
-            firestoreDb.collection("links").document(id)
-                .collection("delete").document(artifactId.toString()).delete()
-            firestoreDb.collection("links").document(id)
-                .collection("configure").document(artifactId.toString()).delete()
-
-            accessList.forEach { access ->
-                firestoreDb.collection("links").document(id)
-                    .collection("$access").document(artifactId.toString()).set(Link("$access", "${ownerId.toString()}", "$id", "nil", arrayListOf<String>()))
-            }
-        }
-        Toast.makeText(this, "Access Configured!", Toast.LENGTH_SHORT).show()
-        binding.btnSubmit.isEnabled = true
-        finish()
+        //descendant::user[contains(@description, 'japan')] --- all users from japan, start point will always be specific artifact (DONE)
+        //child::friend[@id='4Lbyyznfw9YASlVXMhcG7fRKOZt2']/descendant::friend --- all friends of a particular friend (DONE)
+        //descendant::friend[@value='classmate'] --- all classmates of a certain user (DONE)
+        //child::liked --- all posts liked by a certain user (DONE)
+        //child::commented[@owner='4Lbyyznfw9YASlVXMhcG7fRKOZt2'] --- all posts commented by a certain user which belong to another user (DONE)
+        //child::commented[@owner='4Lbyyznfw9YASlVXMhcG7fRKOZt2'][contains(@keywords, 'kitchen')] --- all posts commented by a certain user which belong to another user, of a certain subject (DONE)
     }
 
     private fun getCommandString (expression: String): String {
@@ -981,6 +954,32 @@ class AccessActivity : AppCompatActivity() {
                     }
             }
         }
+    }
+
+    private fun handleSubmitButtonClick () {
+        binding.btnSubmit.isEnabled = false
+        var accessList = binding.etAccess.text.drop(1).split('/')
+        Log.i(TAG, "accessList: $accessList")
+        xpathIdList.forEach { id ->
+            firestoreDb.collection("links").document(id)
+                .collection("ban").document(artifactId.toString()).delete()
+            firestoreDb.collection("links").document(id)
+                .collection("read").document(artifactId.toString()).delete()
+            firestoreDb.collection("links").document(id)
+                .collection("update").document(artifactId.toString()).delete()
+            firestoreDb.collection("links").document(id)
+                .collection("delete").document(artifactId.toString()).delete()
+            firestoreDb.collection("links").document(id)
+                .collection("configure").document(artifactId.toString()).delete()
+
+            accessList.forEach { access ->
+                firestoreDb.collection("links").document(id)
+                    .collection("$access").document(artifactId.toString()).set(Link("$access", "${ownerId.toString()}", "$id", "nil", arrayListOf<String>()))
+            }
+        }
+        Toast.makeText(this, "Access Configured!", Toast.LENGTH_SHORT).show()
+        binding.btnSubmit.isEnabled = true
+        finish()
     }
 
 }
