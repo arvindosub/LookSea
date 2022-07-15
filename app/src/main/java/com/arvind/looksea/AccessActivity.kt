@@ -578,6 +578,7 @@ class AccessActivity : AppCompatActivity() {
         //new format
         //descendant::user[contains(@description, 'japan')]
         //child::friend
+        //child::friend/child::*[@username='john']
         //child::friend[@end='4Lbyyznfw9YASlVXMhcG7fRKOZt2']
         //child::friend[@end='4Lbyyznfw9YASlVXMhcG7fRKOZt2']/descendant::friend
         //descendant::friend[@value='classmate']
@@ -678,7 +679,13 @@ class AccessActivity : AppCompatActivity() {
                         if (tempSubStepList[0] == "user") {
                             cmdStr += "whereEqualTo('endOwner', '${tempSubStepList[1].substringAfter("'").substringBefore("'")}')."
                         } else {
-                            cmdStr += "whereEqualTo('${tempSubStepList[0]}', '${tempSubStepList[1].substringAfter("'").substringBefore("'")}')."
+                            //cmdStr += "whereEqualTo('${tempSubStepList[0]}', '${tempSubStepList[1].substringAfter("'").substringBefore("'")}')."
+                            cmdStr = cmdStr
+                            if (tempSubStepList[0] !in mutableListOf<String>("description", "user", "username", "type", "location", "privacy")) {
+                                subCmdStr += "'links').document('resultId').collection('${tempSubStepList[1]}')."
+                            } else {
+                                subCmdStr += "'artifacts').whereEqualTo('${tempSubStepList[0]}', '${tempSubStepList[1].substringAfter("'").substringBefore("'")}')."
+                            }
                         }
                     }
                 } else if (subStep.contains("contains")) {
@@ -836,10 +843,58 @@ class AccessActivity : AppCompatActivity() {
                                 myObjList.add(shot.getData())
                                 myIdList.add(shot.id)
                             }
-                            Log.i(TAG, "$myIdList")
-                            Log.i(TAG, "$myObjList")
-                            xpathIdList = myIdList
-                            binding.tvUsers.text = xpathIdList.toString()
+                            if (subCmdStr.length > 28) {
+                                if (subCmdList.size == 2) {
+                                    if (subCmdList[1].contains("whereEqualTo")) {
+                                        firestoreDb
+                                            .collection("${subCmdList[0].substringAfter("'").substringBefore("'")}")
+                                            .whereEqualTo("${subCmdList[1].split(",")[0].substringAfter("'").substringBefore("'")}", "${subCmdList[1].split(",")[1].substringAfter("'").substringBefore("'")}")
+                                            .get()
+                                            .addOnSuccessListener { subSnapshots ->
+                                                var subIdList = mutableListOf<String>()
+                                                var subObjList = mutableListOf<Any>()
+                                                subSnapshots.forEach { subShot ->
+                                                    if (subShot.id in myIdList) {
+                                                        subIdList.add(subShot.id)
+                                                        subObjList.add(subShot.getData())
+                                                    }
+                                                }
+                                                myIdList = subIdList
+                                                myObjList = subObjList
+                                                Log.i(TAG, "$myIdList")
+                                                Log.i(TAG, "$myObjList")
+                                                xpathIdList = myIdList
+                                                binding.tvUsers.text = xpathIdList.toString()
+                                            }
+                                    } else if (subCmdList[1].contains("whereIn")) {
+                                        firestoreDb
+                                            .collection("${subCmdList[0].substringAfter("'").substringBefore("'")}")
+                                            .whereIn("${subCmdList[1].substringAfter("@").substringBefore(",")}", mutableListOf("${subCmdList[1].substringAfter("'").substringBefore("'")}"))
+                                            .get()
+                                            .addOnSuccessListener { subSnapshots ->
+                                                var subIdList = mutableListOf<String>()
+                                                var subObjList = mutableListOf<Any>()
+                                                subSnapshots.forEach { subShot ->
+                                                    if (subShot.id in myIdList) {
+                                                        subIdList.add(subShot.id)
+                                                        subObjList.add(subShot.getData())
+                                                    }
+                                                }
+                                                myIdList = subIdList
+                                                myObjList = subObjList
+                                                Log.i(TAG, "$myIdList")
+                                                Log.i(TAG, "$myObjList")
+                                                xpathIdList = myIdList
+                                                binding.tvUsers.text = xpathIdList.toString()
+                                            }
+                                    }
+                                }
+                            } else {
+                                Log.i(TAG, "$myIdList")
+                                Log.i(TAG, "$myObjList")
+                                xpathIdList = myIdList
+                                binding.tvUsers.text = xpathIdList.toString()
+                            }
                         }
                 } else if (cmdList.size == 4) {
                     if (cmdList[3].contains("whereIn")) {
