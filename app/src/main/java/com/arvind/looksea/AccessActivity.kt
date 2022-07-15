@@ -561,9 +561,10 @@ class AccessActivity : AppCompatActivity() {
                 Log.i(TAG, "ownerId: ${ownerId.toString()}")
 
                 var expression = binding.etXpathCode.text.toString()
-                var cmdStr = getCommandString(expression)
+                var (cmdStr, subCmdStr) = getCommandString(expression)
                 Log.i(TAG, "cmdStr: $cmdStr")
-                executeFirebaseCommand(cmdStr)
+                Log.i(TAG, "subCmdStr: $subCmdStr")
+                executeFirebaseCommand(cmdStr, subCmdStr)
                 binding.btnSubmitXpath.isEnabled = true
             }
 
@@ -573,9 +574,21 @@ class AccessActivity : AppCompatActivity() {
         //child::liked --- all posts liked by a certain user (DONE)
         //child::commented[@owner='4Lbyyznfw9YASlVXMhcG7fRKOZt2'] --- all posts commented by a certain user which belong to another user (DONE)
         //child::commented[@owner='4Lbyyznfw9YASlVXMhcG7fRKOZt2'][contains(@keywords, 'kitchen')] --- all posts commented by a certain user which belong to another user, of a certain subject (DONE)
+
+        //new format
+        //descendant::user[contains(@description, 'japan')]
+        //child::friend
+        //child::friend[@end='4Lbyyznfw9YASlVXMhcG7fRKOZt2']
+        //child::friend[@end='4Lbyyznfw9YASlVXMhcG7fRKOZt2']/descendant::friend
+        //descendant::friend[@value='classmate']
+        //child::liked
+        //child::commented
+        //child::commented/child::*[@user='4Lbyyznfw9YASlVXMhcG7fRKOZt2']
+        //child::commented[contains(@keywords, 'kitchen')]
+        //child::commented[contains(@keywords, 'kitchen')]/child::*[@user='4Lbyyznfw9YASlVXMhcG7fRKOZt2']
     }
 
-    private fun getCommandString (expression: String): String {
+    private fun getCommandString (expression: String): Pair<String, String> {
         var items = expression.split('/')
         var myList = mutableListOf<MutableList<String>>()
         var startPt = mutableListOf<String>()
@@ -599,6 +612,7 @@ class AccessActivity : AppCompatActivity() {
         Log.i(TAG, "input list: $myList")
 
         var cmdStr = "firestoreDb.collection("
+        var subCmdStr = "firestoreDb.collection("
         if (myList.size == 1) {
             myList[0].forEach { subStep ->
                 if (subStep.contains("@") && subStep.contains("=")) {
@@ -630,39 +644,67 @@ class AccessActivity : AppCompatActivity() {
                 if (subStep.contains("::")) {
                     var tempSubStepList = subStep.replace("::",":").split(":")
                     if (tempSubStepList[0] != "descendant" && tempSubStepList[1] !in mutableListOf<String>("user", "post", "image", "video", "audio", "text")) {
-                        cmdStr += "'links')."
+                        cmdStr += "'links').document('${startPt[1].substringAfter("'").substringBefore("'")}').collection('${tempSubStepList[1]}')."
                     }
                 } else if (subStep.contains("@") && subStep.contains("=")) {
-                    cmdStr += "document('${subStep.substringAfter("'").substringBefore("'")}')."
+                    cmdStr += "whereEqualTo('${subStep.substringAfter("@").substringBefore("=")}', '${subStep.substringAfter("'").substringBefore("'")}')."
+                    //cmdStr += "document('${subStep.substringAfter("'").substringBefore("'")}')."
+                    if (subStep.substringAfter("'").substringBefore("'").length == 28) {
+                        startPt.add("'${subStep.substringAfter("'").substringBefore("'")}'")
+                    }
+                } else if (subStep.contains("contains")) {
+                    var subField = subStep.substringAfter("@").substringBefore(",")
+                    if (subField == "keywords") {
+                        cmdStr += "whereArrayContains('$subField', '${subStep.substringAfter("'").substringBefore("'")}')."
+                    } else {
+                        cmdStr += "whereIn('$subField', mutableListOf('${subStep.substringAfter("'").substringBefore("'")}'))."
+                    }
                 }
             }
             myList[1].forEach { subStep ->
                 if (subStep.contains("::")) {
                     var tempSubStepList = subStep.replace("::",":").split(":")
                     if (tempSubStepList[0] == "descendant") {
-                        cmdStr += "collection('${tempSubStepList[1]}')."
+                        cmdStr == cmdStr
+                        if (tempSubStepList[1] !in mutableListOf<String>("user", "post", "image", "video", "audio", "text")) {
+                            subCmdStr += "'links').document('${startPt[2].substringAfter("'").substringBefore("'")}').collection('${tempSubStepList[1]}')."
+                        }
                     }
                 } else if (subStep.contains("@") && subStep.contains("=")) {
                     var tempSubStepList = subStep.drop(1).split("=")
                     if (tempSubStepList[0] == "id") {
                         cmdStr += "document('${tempSubStepList[1]}')."
                     } else {
-                        cmdStr += "whereEqualTo('${tempSubStepList[0]}', '${tempSubStepList[1].substringAfter("'").substringBefore("'")}')."
+                        if (tempSubStepList[0] == "user") {
+                            cmdStr += "whereEqualTo('endOwner', '${tempSubStepList[1].substringAfter("'").substringBefore("'")}')."
+                        } else {
+                            cmdStr += "whereEqualTo('${tempSubStepList[0]}', '${tempSubStepList[1].substringAfter("'").substringBefore("'")}')."
+                        }
                     }
-                } else if (subStep.contains("contains") && subStep.contains("=")) {
-                    cmdStr += "whereIn('${subStep.substringAfter("@").substringBefore(",")}', mutableListOf('${subStep.substringAfter("'").substringBefore("'")}'))."
+                } else if (subStep.contains("contains")) {
+                    var subField = subStep.substringAfter("@").substringBefore(",")
+                    if (subField == "keywords") {
+                        cmdStr += "whereArrayContains('$subField', '${subStep.substringAfter("'").substringBefore("'")}')."
+                    } else {
+                        cmdStr += "whereIn('$subField', mutableListOf('${subStep.substringAfter("'").substringBefore("'")}'))."
+                    }
                 }
             }
         }
         cmdStr += "get()"
-        return cmdStr
+        subCmdStr += "get()"
+        return Pair(cmdStr, subCmdStr)
     }
 
-    private fun executeFirebaseCommand (cmdStr: String) {
+    private fun executeFirebaseCommand (cmdStr: String, subCmdStr: String) {
         var cmdList = cmdStr.split(".").drop(1).dropLast(1)
+        var subCmdList = subCmdStr.split(".").drop(1).dropLast(1)
         Log.i(TAG, "cmd list: $cmdList")
+        Log.i(TAG, "sub cmd list: $subCmdList")
         var colCount = 0
         var docCount = 0
+        var subColCount = 0
+        var subDocCount = 0
         cmdList.forEach { item ->
             if (item.contains("collection")) {
                 colCount += 1
@@ -670,8 +712,17 @@ class AccessActivity : AppCompatActivity() {
                 docCount += 1
             }
         }
+        subCmdList.forEach { item ->
+            if (item.contains("collection")) {
+                subColCount += 1
+            } else if (item.contains("document")) {
+                subDocCount += 1
+            }
+        }
         Log.i(TAG, "colCount: $colCount")
         Log.i(TAG, "docCount: $docCount")
+        Log.i(TAG, "subColCount: $subColCount")
+        Log.i(TAG, "subDocCount: $subDocCount")
         var myObjList = mutableListOf<Any>()
         var myIdList = mutableListOf<String>()
 
@@ -814,6 +865,48 @@ class AccessActivity : AppCompatActivity() {
                             .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
                             .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
                             .whereEqualTo("${cmdList[3].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[3].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myObjList.add(shot.getData())
+                                    myIdList.add(shot.id)
+                                }
+
+                                if (subCmdStr.length > 28) {
+                                    if (subCmdList.size == 3) {
+                                        firestoreDb
+                                            .collection("${subCmdList[0].substringAfter("'").substringBefore("'")}")
+                                            .document("${subCmdList[1].substringAfter("'").substringBefore("'")}")
+                                            .collection("${subCmdList[2].substringAfter("'").substringBefore("'")}")
+                                            .get()
+                                            .addOnSuccessListener { subSnapshots ->
+                                                var subIdList = mutableListOf<String>()
+                                                var subObjList = mutableListOf<Any>()
+                                                subSnapshots.forEach { subShot ->
+                                                    subIdList.add(subShot.id)
+                                                    subObjList.add(subShot.getData())
+                                                }
+                                                myIdList = subIdList
+                                                myObjList = subObjList
+                                                Log.i(TAG, "$myIdList")
+                                                Log.i(TAG, "$myObjList")
+                                                xpathIdList = myIdList
+                                                binding.tvUsers.text = xpathIdList.toString()
+                                            }
+                                    }
+                                } else {
+                                    Log.i(TAG, "$myIdList")
+                                    Log.i(TAG, "$myObjList")
+                                    xpathIdList = myIdList
+                                    binding.tvUsers.text = xpathIdList.toString()
+                                }
+                            }
+                    } else if (cmdList[3].contains("whereArrayContains")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                            .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                            .whereArrayContains("${cmdList[3].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[3].split(',')[1].substringAfter("'").substringBefore("'")}")
                             .get()
                             .addOnSuccessListener { snapshots ->
                                 snapshots.forEach { shot ->
@@ -974,7 +1067,7 @@ class AccessActivity : AppCompatActivity() {
 
             accessList.forEach { access ->
                 firestoreDb.collection("links").document(id)
-                    .collection("$access").document(artifactId.toString()).set(Link("$access", "${ownerId.toString()}", "$id", "nil", arrayListOf<String>()))
+                    .collection("$access").document(artifactId.toString()).set(Link("$id", "$access", "${artifactId.toString()}", "$access", "$access","$id", "${ownerId.toString()}", "$id", arrayListOf<String>()))
             }
         }
         Toast.makeText(this, "Access Configured!", Toast.LENGTH_SHORT).show()

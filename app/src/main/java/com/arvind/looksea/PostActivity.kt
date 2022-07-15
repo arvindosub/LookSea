@@ -190,7 +190,7 @@ class PostActivity : AppCompatActivity() {
 
                 adapter.setOnUserClickListener(object : CommentAdapter.onUserClickListener {
                     override fun onUserClick(position: Int) {
-                        val thisUser = commentList[position].linkowner
+                        val thisUser = commentList[position].linkOwner
                         firestoreDb.collection("artifacts")
                             .document(thisUser)
                             .get()
@@ -205,7 +205,7 @@ class PostActivity : AppCompatActivity() {
 
                 adapter.setOnDeleteClickListener(object : CommentAdapter.onDeleteClickListener {
                     override fun onDeleteClick(position: Int) {
-                        val thisUser = commentList[position].linkowner
+                        val thisUser = commentList[position].linkOwner
                         firestoreDb.collection("links").document(thisUser)
                             .collection("commented").document(postId as String).delete()
                             .addOnSuccessListener {
@@ -221,7 +221,7 @@ class PostActivity : AppCompatActivity() {
 
                 adapter.setOnCommentClickListener(object : CommentAdapter.onCommentClickListener {
                     override fun onCommentClick(position: Int) {
-                        val thisUser = commentList[position].linkowner
+                        val thisUser = commentList[position].linkOwner
                         firestoreDb.collection("artifacts")
                             .document(thisUser)
                             .get()
@@ -241,19 +241,13 @@ class PostActivity : AppCompatActivity() {
 
     private fun uploadComment() {
         binding.btnSubmit.isEnabled = false
-
-        var linkVal = Link(
-            "commented",
-            "$postUserId", "$userId",
-            "${binding.etComment.text}",
-            binding.etComment.text.replace(("[^\\w]").toRegex(), " ").split(' ') as ArrayList<String>
-        )
-
+        var keywords = binding.etComment.text.replace(("[^\\w]").toRegex(), " ").split(' ') as ArrayList<String>
+        var comment = binding.etComment.text.toString()
         firestoreDb.collection("links").document(userId!!)
-            .collection("commented").document(postId!!).set(linkVal)
+            .collection("commented").document(postId!!).set(Link("$userId","commented","$postId","commented",comment, "$userId", "$postUserId", "$userId", keywords))
             .addOnCompleteListener {
                 firestoreDb.collection("links").document(postId!!)
-                    .collection("commented").document(userId!!).set(linkVal)
+                    .collection("commented").document(userId!!).set(Link("$postId","commented","$userId","commented",comment, "$postUserId", "$userId", "$userId", keywords))
                     .addOnCompleteListener { linkCreationTask ->
                         binding.btnSubmit.isEnabled = true
                         if (!linkCreationTask.isSuccessful) {
@@ -373,17 +367,11 @@ class PostActivity : AppCompatActivity() {
                             .addOnCompleteListener {
                                 Log.i(TAG, "Likes ${likes+1}")
                                 Toast.makeText(this, "Liked", Toast.LENGTH_SHORT).show()
-                                var link = Link(
-                                    "liked",
-                                    "$postUserId", "$userId",
-                                    "nil",
-                                    arrayListOf<String>()
-                                )
                                 firestoreDb.collection("links").document(userId as String)
-                                    .collection("liked").document(postId as String).set(link)
+                                    .collection("liked").document(postId as String).set(Link("$userId","liked","$postId","liked","liked","$userId", "$postUserId","$userId",arrayListOf<String>()))
                                     .addOnCompleteListener {
                                         firestoreDb.collection("links").document(postId as String)
-                                            .collection("liked").document(userId as String).set(link)
+                                            .collection("liked").document(userId as String).set(Link("$postId","liked","$userId","liked","liked","$postUserId", "$userId","$userId",arrayListOf<String>()))
                                     }
                             }
                     } else {

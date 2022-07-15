@@ -223,17 +223,11 @@ open class HomeActivity : AppCompatActivity() {
                             .addOnCompleteListener {
                                 Log.i(TAG, "Likes ${likes+1}")
                                 Toast.makeText(this, "Liked", Toast.LENGTH_SHORT).show()
-                                var link = Link(
-                                    "liked",
-                                    "${post.userId}", "$userId",
-                                    "nil",
-                                    arrayListOf<String>()
-                                )
                                 firestoreDb.collection("links").document(userId as String)
-                                    .collection("liked").document(postId as String).set(link)
+                                    .collection("liked").document(postId as String).set(Link("$userId", "liked", "$postId", "liked", "liked", "$userId", "${post.userId}", "$userId", arrayListOf<String>()))
                                     .addOnCompleteListener {
                                         firestoreDb.collection("links").document(postId as String)
-                                            .collection("liked").document(userId as String).set(link)
+                                            .collection("liked").document(userId as String).set(Link("$postId", "liked", "$userId", "liked", "liked", "${post.userId}", "$userId", "$userId", arrayListOf<String>()))
                                     }
                             }
                     } else {

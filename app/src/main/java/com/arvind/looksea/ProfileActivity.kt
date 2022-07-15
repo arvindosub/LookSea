@@ -561,9 +561,9 @@ class ProfileActivity : AppCompatActivity() {
         //firestoreDb.collection("friendlists").document(currUserId as String).collection("myfriends").document(userId as String).set(sign!!)
 
         firestoreDb.collection("links").document(userId as String)
-            .collection("friend").document(currUserId as String).set(Link("friend","$userId", "$userId", "nil", arrayListOf<String>()))
+            .collection("friend").document(currUserId as String).set(Link("$userId","friend","$currUserId","friend", "friend", "$userId", "$currUserId", "$userId", arrayListOf<String>()))
         firestoreDb.collection("links").document(currUserId as String)
-            .collection("friend").document(userId as String).set(Link("friend","$currUserId", "$currUserId", "nil", arrayListOf<String>()))
+            .collection("friend").document(userId as String).set(Link("$currUserId","friend","$userId","friend", "friend", "$currUserId", "$userId", "$currUserId", arrayListOf<String>()))
 
         firestoreDb.collection("links").document(userId as String)
             .collection("receivedrequest").document(currUserId as String).delete()

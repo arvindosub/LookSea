@@ -321,9 +321,9 @@ class CreateActivity : AppCompatActivity() {
             }
 
             if (binding.rgbFriends.isChecked) {
-                privacy = "friends"
+                privacy = "/frds2"
             } else {
-                privacy = "public"
+                privacy = "/pub2"
             }
 
             val post = Post(
@@ -340,14 +340,16 @@ class CreateActivity : AppCompatActivity() {
 
             firestoreDb.collection("artifacts").add(post)
                 .addOnSuccessListener { postCreationTask ->
-                    var link = Link(
-                        "owned",
-                        "$userId", "$userId", "nil", arrayListOf<String>()
-                    )
                     firestoreDb.collection("links").document(postCreationTask.id)
-                        .collection("owned").document(userId as String).set(link)
+                        .collection("owned").document(userId as String).set(Link(
+                            "${postCreationTask.id}","owned", "$userId",
+                            "owned", "owned", "$userId", "$userId", "$userId", arrayListOf<String>()
+                        ))
                     firestoreDb.collection("links").document(userId as String)
-                        .collection("owned").document(postCreationTask.id).set(link)
+                        .collection("owned").document(postCreationTask.id).set(Link(
+                            "$userId","owned", "${postCreationTask.id}",
+                            "owned", "owned", "$userId", "$userId", "$userId", arrayListOf<String>()
+                        ))
                     if (binding.etDescription.text.isNotBlank() && binding.etDescription.text.contains("#")) {
                         var tagList : Array<String> = desc.split(" ").toTypedArray()
 
@@ -411,6 +413,12 @@ class CreateActivity : AppCompatActivity() {
                 fileType = "audio"
             }
 
+            if (binding.rgbFriends.isChecked) {
+                privacy = "/frds2"
+            } else {
+                privacy = "/pub2"
+            }
+
             // Upload file to Firebase Storage
             fileReference.putFile(fileUploadUri)
                 .continueWithTask { fileUploadTask ->
@@ -428,18 +436,21 @@ class CreateActivity : AppCompatActivity() {
                             downloadUrlTask.result.toString(),
                             location,
                             userId,
-                            signedInUser?.username)
+                            signedInUser?.username,
+                            privacy.toString())
                     }
                     post?.let { firestoreDb.collection("artifacts").add(it) }!!
                 }.addOnSuccessListener { postCreationTask ->
-                    var link = Link(
-                        "owned",
-                        "$userId", "$userId", "nil", arrayListOf<String>()
-                    )
                     firestoreDb.collection("links").document(postCreationTask.id)
-                        .collection("owned").document(userId as String).set(link)
+                        .collection("owned").document(userId as String).set(Link(
+                            "${postCreationTask.id}","owned", "$userId",
+                            "owned", "owned", "$userId", "$userId", "$userId", arrayListOf<String>()
+                        ))
                     firestoreDb.collection("links").document(userId as String)
-                        .collection("owned").document(postCreationTask.id).set(link)
+                        .collection("owned").document(postCreationTask.id).set(Link(
+                            "$userId","owned", "${postCreationTask.id}",
+                            "owned", "owned", "$userId", "$userId", "$userId", arrayListOf<String>()
+                        ))
                     if (binding.etDescription.text.isNotBlank() && binding.etDescription.text.contains("#")) {
                         var tagList : Array<String> = desc!!.split(" ").toTypedArray()
 
