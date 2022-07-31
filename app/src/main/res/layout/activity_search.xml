@@ -32,7 +32,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
             android:ems="10"
-            android:hint="type username..."
+            android:hint="type keyword..."
             android:inputType="text"
             android:minHeight="48dp" />
 

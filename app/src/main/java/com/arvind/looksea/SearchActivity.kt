@@ -30,6 +30,8 @@ class SearchActivity : AppCompatActivity() {
     private var searchList = mutableListOf<Item>()
     private var searchIdList = mutableListOf<String>()
     private var viewableIds = mutableListOf<String>()
+    private var userId: String? = ""
+    private var xpathIdList = mutableListOf<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,7 +41,7 @@ class SearchActivity : AppCompatActivity() {
         adapterSearch = ItemAdapter(this, search)
         binding.rvSearch.adapter = adapterSearch
         binding.rvSearch.layoutManager = LinearLayoutManager(this)
-        var userId = FirebaseAuth.getInstance().currentUser?.uid as String
+        userId = FirebaseAuth.getInstance().currentUser?.uid as String
 
         firestoreDb = FirebaseFirestore.getInstance()
         firestoreDb.collection("artifacts")
@@ -550,5 +552,119 @@ class SearchActivity : AppCompatActivity() {
         val logoutIntent = Intent(this, LoginActivity::class.java)
         logoutIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(logoutIntent)
+    }
+
+    private fun getCommandString (expression: String): Pair<String, String> {
+        var items = expression.split('/')
+        var myList = mutableListOf<MutableList<String>>()
+        var startPt = mutableListOf<String>()
+        startPt.add("user")
+        startPt.add(userId.toString())
+        items.forEach { item ->
+            var tempList = mutableListOf<String>()
+            if (item.contains(']')) {
+                var tempItem = item.replace("]","")
+                var subItems = tempItem.split("[")
+                subItems.forEach { subItem ->
+                    tempList.add(subItem)
+                }
+                myList.add(tempList)
+            } else {
+                tempList.add(item)
+                myList.add(tempList)
+            }
+        }
+        Log.i(TAG, "first item: $startPt")
+        Log.i(TAG, "input list: $myList")
+
+        var cmdStr = "firestoreDb.collection("
+        var subCmdStr = "firestoreDb.collection("
+        if (myList.size == 1) {
+            myList[0].forEach { subStep ->
+                if (subStep.contains("@") && subStep.contains("=")) {
+                    var tempSubStepList = subStep.drop(1).split("=")
+                    cmdStr += "whereEqualTo('${tempSubStepList[0]}', '${subStep.substringAfter("'").substringBefore("'")}')."
+                } else if (subStep.contains("contains")) {
+                    var subField = subStep.substringAfter("@").substringBefore(",")
+                    if (subField == "keywords") {
+                        cmdStr += "whereArrayContains('$subField', '${subStep.substringAfter("'").substringBefore("'")}')."
+                    } else {
+                        cmdStr += "whereIn('$subField', mutableListOf('${subStep.substringAfter("'").substringBefore("'")}'))."
+                    }
+                } else {
+                    if (subStep.contains("descendant")) {
+                        var tempSubStepList = subStep.replace("::",":").split(":")
+                        if (subStep.contains("user")) {
+                            cmdStr += "'artifacts').whereEqualTo('type', '${tempSubStepList[1]}')."
+                        } else {
+                            cmdStr += "'links').document('${startPt[1].substringAfter("'").substringBefore("'")}').collection('${tempSubStepList[1]}')."
+                        }
+                    } else if (subStep.contains("child")) {
+                        var tempSubStepList = subStep.replace("::",":").split(":")
+                        cmdStr += "'links').document('${startPt[1].substringAfter("'").substringBefore("'")}').collection('${tempSubStepList[1]}')."
+                    }
+                }
+            }
+        } else if (myList.size == 2) {
+            myList[0].forEach { subStep ->
+                if (subStep.contains("::")) {
+                    var tempSubStepList = subStep.replace("::",":").split(":")
+                    if (tempSubStepList[0] != "descendant" && tempSubStepList[1] !in mutableListOf<String>("user", "post", "image", "video", "audio", "text")) {
+                        cmdStr += "'links').document('${startPt[1].substringAfter("'").substringBefore("'")}').collection('${tempSubStepList[1]}')."
+                    }
+                } else if (subStep.contains("@") && subStep.contains("=")) {
+                    cmdStr += "whereEqualTo('${subStep.substringAfter("@").substringBefore("=")}', '${subStep.substringAfter("'").substringBefore("'")}')."
+                    //cmdStr += "document('${subStep.substringAfter("'").substringBefore("'")}')."
+                    if (subStep.substringAfter("'").substringBefore("'").length == 28) {
+                        startPt.add("'${subStep.substringAfter("'").substringBefore("'")}'")
+                    }
+                } else if (subStep.contains("contains")) {
+                    var subField = subStep.substringAfter("@").substringBefore(",")
+                    if (subField == "keywords") {
+                        cmdStr += "whereArrayContains('$subField', '${subStep.substringAfter("'").substringBefore("'")}')."
+                    } else {
+                        cmdStr += "whereIn('$subField', mutableListOf('${subStep.substringAfter("'").substringBefore("'")}'))."
+                    }
+                }
+            }
+            myList[1].forEach { subStep ->
+                if (subStep.contains("::")) {
+                    var tempSubStepList = subStep.replace("::",":").split(":")
+                    if (tempSubStepList[0] == "descendant") {
+                        cmdStr == cmdStr
+                        if (tempSubStepList[1] !in mutableListOf<String>("user", "post", "image", "video", "audio", "text")) {
+                            subCmdStr += "'links').document('${startPt[2].substringAfter("'").substringBefore("'")}').collection('${tempSubStepList[1]}')."
+                        }
+                    }
+                } else if (subStep.contains("@") && subStep.contains("=")) {
+                    var tempSubStepList = subStep.drop(1).split("=")
+                    if (tempSubStepList[0] == "id") {
+                        cmdStr += "document('${tempSubStepList[1]}')."
+                    } else {
+                        if (tempSubStepList[0] == "user") {
+                            cmdStr += "whereEqualTo('endOwner', '${tempSubStepList[1].substringAfter("'").substringBefore("'")}')."
+                        } else {
+                            //cmdStr += "whereEqualTo('${tempSubStepList[0]}', '${tempSubStepList[1].substringAfter("'").substringBefore("'")}')."
+                            cmdStr = cmdStr
+                            if (tempSubStepList[0] !in mutableListOf<String>("description", "user", "username", "type", "location", "privacy")) {
+                                subCmdStr += "'links').document('resultId').collection('${tempSubStepList[1]}')."
+                            } else {
+                                subCmdStr += "'artifacts').whereEqualTo('${tempSubStepList[0]}', '${tempSubStepList[1].substringAfter("'").substringBefore("'")}')."
+                            }
+                        }
+                    }
+                } else if (subStep.contains("contains")) {
+                    var subField = subStep.substringAfter("@").substringBefore(",")
+                    if (subField == "keywords") {
+                        cmdStr += "whereArrayContains('$subField', '${subStep.substringAfter("'").substringBefore("'")}')."
+                    } else {
+                        cmdStr += "whereIn('$subField', mutableListOf('${subStep.substringAfter("'").substringBefore("'")}'))."
+                    }
+                }
+            }
+        }
+        cmdStr += "get()"
+        subCmdStr += "get()"
+        return Pair(cmdStr, subCmdStr)
     }
 }

@@ -303,6 +303,7 @@ class CreateActivity : AppCompatActivity() {
 
     private fun handleSubmitButtonClick() {
         var desc: String? = binding.etDescription.text.toString()
+        privacy = binding.etPrivacy.text.toString()
         if (binding.etDescription.text.isBlank()) {
             desc = ""
         }
@@ -318,12 +319,6 @@ class CreateActivity : AppCompatActivity() {
                 fileType = "text"
             } else if (binding.rgbSurvey.isChecked) {
                 fileType = "survey"
-            }
-
-            if (binding.rgbFriends.isChecked) {
-                privacy = "/frds2"
-            } else {
-                privacy = "/pub2"
             }
 
             val post = Post(
@@ -411,12 +406,6 @@ class CreateActivity : AppCompatActivity() {
                 fileUploadUri = imageUri as Uri
                 fileReference = storageReference.child("audio/${creationTime}-audio.mp3")
                 fileType = "audio"
-            }
-
-            if (binding.rgbFriends.isChecked) {
-                privacy = "/frds2"
-            } else {
-                privacy = "/pub2"
             }
 
             // Upload file to Firebase Storage
