@@ -576,11 +576,11 @@ class AccessActivity : AppCompatActivity() {
         //child::commented[@owner='4Lbyyznfw9YASlVXMhcG7fRKOZt2'][contains(@keywords, 'kitchen')] --- all posts commented by a certain user which belong to another user, of a certain subject (DONE)
 
         //new format
-        //descendant::user[contains(@description, 'japan')]
         //child::friend
         //child::friend/child::*[@username='john']
         //child::friend[@end='4Lbyyznfw9YASlVXMhcG7fRKOZt2']
         //child::friend[@end='4Lbyyznfw9YASlVXMhcG7fRKOZt2']/descendant::friend
+        //descendant::user[contains(@description, 'japan')]
         //descendant::friend[@value='classmate']
         //child::liked
         //child::commented
