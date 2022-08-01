@@ -31,7 +31,8 @@ class SearchActivity : AppCompatActivity() {
     private var searchIdList = mutableListOf<String>()
     private var viewableIds = mutableListOf<String>()
     private var userId: String? = ""
-    private var xpathIdList = mutableListOf<String>()
+    private var selUserId: String? = ""
+    private var selUser: Item? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -486,21 +487,40 @@ class SearchActivity : AppCompatActivity() {
                         val itemId = searchIdList[position]
                         Log.i(TAG, "$item")
 
-                        if (itemId in viewableIds) {
-                            if (item.type == "user") {
-                                val intent = Intent(this@SearchActivity, ProfileActivity::class.java)
-                                intent.putExtra(EXTRA_USERNAME, item.username)
-                                startActivity(intent)
+                        if (binding.etXpathCode.text.toString() != "" && binding.etSearch.text.toString() != "") {
+                            if (searchIdList[position] in viewableIds) {
+                                selUserId = searchIdList[position]
+                                selUser = searchList[position]
+                                binding.etXpathCode.text.append("'$selUserId'")
+                                binding.etSearch.text.clear()
+                                search.clear()
+                                adapterSearch.notifyDataSetChanged()
                             } else {
-                                val intent = Intent(this@SearchActivity, PostActivity::class.java)
-                                intent.putExtra(EXTRA_POSTTIME, item.creationTimeMs.toString())
-                                startActivity(intent)
+                                Toast.makeText(this@SearchActivity, "You do not have permission to access this page!", Toast.LENGTH_SHORT).show()
                             }
                         } else {
-                            Toast.makeText(this@SearchActivity, "You do not have permission to view this page!", Toast.LENGTH_SHORT).show()
+                            if (itemId in viewableIds) {
+                                if (item.type == "user") {
+                                    val intent = Intent(this@SearchActivity, ProfileActivity::class.java)
+                                    intent.putExtra(EXTRA_USERNAME, item.username)
+                                    startActivity(intent)
+                                } else {
+                                    val intent = Intent(this@SearchActivity, PostActivity::class.java)
+                                    intent.putExtra(EXTRA_POSTTIME, item.creationTimeMs.toString())
+                                    startActivity(intent)
+                                }
+                            } else {
+                                Toast.makeText(this@SearchActivity, "You do not have permission to view this page!", Toast.LENGTH_SHORT).show()
+                            }
                         }
+
                     }
                 })
+
+                binding.btnSearch.setOnClickListener {
+                    handleXPathSearch()
+                }
+
             }
             .addOnFailureListener { exception ->
                 Log.i(TAG, "Failed to fetch signed-in user", exception)
@@ -552,6 +572,15 @@ class SearchActivity : AppCompatActivity() {
         val logoutIntent = Intent(this, LoginActivity::class.java)
         logoutIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(logoutIntent)
+    }
+
+    private fun handleXPathSearch() {
+        binding.btnSearch.isEnabled = false
+        binding.etSearch.text.append("a")
+        binding.etSearch.text.clear()
+        var (cmdStr, subCmdStr) = getCommandString(binding.etXpathCode.text.toString())
+        executeFirebaseCommand(cmdStr, subCmdStr)
+        binding.btnSearch.isEnabled = true
     }
 
     private fun getCommandString (expression: String): Pair<String, String> {
@@ -667,4 +696,561 @@ class SearchActivity : AppCompatActivity() {
         subCmdStr += "get()"
         return Pair(cmdStr, subCmdStr)
     }
+
+    private fun executeFirebaseCommand (cmdStr: String, subCmdStr: String) {
+        var cmdList = cmdStr.split(".").drop(1).dropLast(1)
+        var subCmdList = subCmdStr.split(".").drop(1).dropLast(1)
+        Log.i(TAG, "cmd list: $cmdList")
+        Log.i(TAG, "sub cmd list: $subCmdList")
+        var colCount = 0
+        var docCount = 0
+        var subColCount = 0
+        var subDocCount = 0
+        cmdList.forEach { item ->
+            if (item.contains("collection")) {
+                colCount += 1
+            } else if (item.contains("document")) {
+                docCount += 1
+            }
+        }
+        subCmdList.forEach { item ->
+            if (item.contains("collection")) {
+                subColCount += 1
+            } else if (item.contains("document")) {
+                subDocCount += 1
+            }
+        }
+        Log.i(TAG, "colCount: $colCount")
+        Log.i(TAG, "docCount: $docCount")
+        Log.i(TAG, "subColCount: $subColCount")
+        Log.i(TAG, "subDocCount: $subDocCount")
+        var myObjList = mutableListOf<Item>()
+        var myIdList = mutableListOf<String>()
+
+        if (colCount == 1) {
+            if (docCount == 0) {
+                if (cmdList.size == 1) {
+                    firestoreDb
+                        .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                        .get()
+                        .addOnSuccessListener { snapshots ->
+                            snapshots.forEach { shot ->
+                                myIdList.add(shot.id)
+                            }
+                            firestoreDb.collection("artifacts").whereIn(FieldPath.documentId().toString(), myIdList).get()
+                                .addOnSuccessListener { temps ->
+                                    temps.forEach { temp ->
+                                        myObjList.add(temp.toObject(Item::class.java))
+                                    }
+                                    Log.i(TAG, "$myIdList")
+                                    Log.i(TAG, "$myObjList")
+                                    search.clear()
+                                    search.addAll(myObjList)
+                                    searchList = myObjList
+                                    searchIdList = myIdList
+                                    adapterSearch.notifyDataSetChanged()
+                                }
+                        }
+                } else if (cmdList.size == 2) {
+                    if (cmdList[1].contains("whereIn")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .whereIn("${cmdList[1].split(',')[0].substringAfter("'").substringBefore("'")}", mutableListOf("${cmdList[1].split(',')[1].substringAfter("'").substringBefore("'")}"))
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myIdList.add(shot.id)
+                                }
+                                firestoreDb.collection("artifacts").whereIn(FieldPath.documentId().toString(), myIdList).get()
+                                    .addOnSuccessListener { temps ->
+                                        temps.forEach { temp ->
+                                            myObjList.add(temp.toObject(Item::class.java))
+                                        }
+                                        Log.i(TAG, "$myIdList")
+                                        Log.i(TAG, "$myObjList")
+                                        search.clear()
+                                        search.addAll(myObjList)
+                                        searchList = myObjList
+                                        searchIdList = myIdList
+                                        adapterSearch.notifyDataSetChanged()
+                                    }
+                            }
+                    } else if (cmdList[1].contains("whereEqualTo")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .whereEqualTo("${cmdList[1].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[1].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myIdList.add(shot.id)
+                                }
+                                firestoreDb.collection("artifacts").whereIn(FieldPath.documentId().toString(), myIdList).get()
+                                    .addOnSuccessListener { temps ->
+                                        temps.forEach { temp ->
+                                            myObjList.add(temp.toObject(Item::class.java))
+                                        }
+                                        Log.i(TAG, "$myIdList")
+                                        Log.i(TAG, "$myObjList")
+                                        search.clear()
+                                        search.addAll(myObjList)
+                                        searchList = myObjList
+                                        searchIdList = myIdList
+                                        adapterSearch.notifyDataSetChanged()
+                                    }
+                            }
+                    }
+                } else if (cmdList.size == 3) {
+                    if (cmdList[1].contains("whereIn") && cmdList[2].contains("whereEqualTo")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .whereIn("${cmdList[1].split(',')[0].substringAfter("'").substringBefore("'")}", mutableListOf("${cmdList[1].split(',')[1].substringAfter("'").substringBefore("'")}"))
+                            .whereEqualTo("${cmdList[2].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[2].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myIdList.add(shot.id)
+                                }
+                                firestoreDb.collection("artifacts").whereIn(FieldPath.documentId().toString(), myIdList).get()
+                                    .addOnSuccessListener { temps ->
+                                        temps.forEach { temp ->
+                                            myObjList.add(temp.toObject(Item::class.java))
+                                        }
+                                        Log.i(TAG, "$myIdList")
+                                        Log.i(TAG, "$myObjList")
+                                        search.clear()
+                                        search.addAll(myObjList)
+                                        searchList = myObjList
+                                        searchIdList = myIdList
+                                        adapterSearch.notifyDataSetChanged()
+                                    }
+                            }
+                    } else if (cmdList[1].contains("whereEqualTo") && cmdList[2].contains("whereIn")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .whereEqualTo("${cmdList[1].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[1].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .whereIn("${cmdList[2].split(',')[0].substringAfter("'").substringBefore("'")}", mutableListOf("${cmdList[2].split(',')[1].substringAfter("'").substringBefore("'")}"))
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myIdList.add(shot.id)
+                                }
+                                firestoreDb.collection("artifacts").whereIn(FieldPath.documentId().toString(), myIdList).get()
+                                    .addOnSuccessListener { temps ->
+                                        temps.forEach { temp ->
+                                            myObjList.add(temp.toObject(Item::class.java))
+                                        }
+                                        Log.i(TAG, "$myIdList")
+                                        Log.i(TAG, "$myObjList")
+                                        search.clear()
+                                        search.addAll(myObjList)
+                                        searchList = myObjList
+                                        searchIdList = myIdList
+                                        adapterSearch.notifyDataSetChanged()
+                                    }
+                            }
+                    }
+                }
+            } else if (docCount == 1) {
+                firestoreDb
+                    .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                    .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                    .get()
+                    .addOnSuccessListener { shot ->
+                        firestoreDb.collection("artifacts").document("${shot.id}").get()
+                            .addOnSuccessListener { temp ->
+                                myObjList.add(temp.toObject(Item::class.java)!!)
+                                myIdList.add(shot.id)
+                                Log.i(TAG, "$myIdList")
+                                Log.i(TAG, "$myObjList")
+                                search.clear()
+                                search.addAll(myObjList)
+                                searchList = myObjList
+                                searchIdList = myIdList
+                                adapterSearch.notifyDataSetChanged()
+                            }
+                    }
+            }
+        } else if (colCount == 2) {
+            if (docCount == 1) {
+                if (cmdList.size == 3) {
+                    firestoreDb
+                        .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                        .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                        .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                        .get()
+                        .addOnSuccessListener { snapshots ->
+                            snapshots.forEach { shot ->
+                                myIdList.add(shot.id)
+                            }
+                            firestoreDb.collection("artifacts").whereIn(FieldPath.documentId().toString(), myIdList).get()
+                                .addOnSuccessListener { temps ->
+                                    temps.forEach { temp ->
+                                        myObjList.add(temp.toObject(Item::class.java))
+                                    }
+                                    if (subCmdStr.length > 28) {
+                                        if (subCmdList.size == 2) {
+                                            if (subCmdList[1].contains("whereEqualTo")) {
+                                                firestoreDb
+                                                    .collection("${subCmdList[0].substringAfter("'").substringBefore("'")}")
+                                                    .whereEqualTo("${subCmdList[1].split(",")[0].substringAfter("'").substringBefore("'")}", "${subCmdList[1].split(",")[1].substringAfter("'").substringBefore("'")}")
+                                                    .get()
+                                                    .addOnSuccessListener { subSnapshots ->
+                                                        var subIdList = mutableListOf<String>()
+                                                        var subObjList = mutableListOf<Item>()
+                                                        subSnapshots.forEach { subShot ->
+                                                            if (subShot.id in myIdList) {
+                                                                subIdList.add(subShot.id)
+                                                            }
+                                                        }
+                                                        firestoreDb.collection("artifacts").whereIn(FieldPath.documentId().toString(), subIdList).get()
+                                                            .addOnSuccessListener { subtemps ->
+                                                                subtemps.forEach { subtemp ->
+                                                                    subObjList.add(subtemp.toObject(Item::class.java))
+                                                                }
+                                                                myIdList = subIdList
+                                                                myObjList = subObjList
+                                                                Log.i(TAG, "$myIdList")
+                                                                Log.i(TAG, "$myObjList")
+                                                                search.clear()
+                                                                search.addAll(myObjList)
+                                                                searchList = myObjList
+                                                                searchIdList = myIdList
+                                                                adapterSearch.notifyDataSetChanged()
+                                                            }
+                                                    }
+                                            } else if (subCmdList[1].contains("whereIn")) {
+                                                firestoreDb
+                                                    .collection("${subCmdList[0].substringAfter("'").substringBefore("'")}")
+                                                    .whereIn("${subCmdList[1].substringAfter("@").substringBefore(",")}", mutableListOf("${subCmdList[1].substringAfter("'").substringBefore("'")}"))
+                                                    .get()
+                                                    .addOnSuccessListener { subSnapshots ->
+                                                        var subIdList = mutableListOf<String>()
+                                                        var subObjList = mutableListOf<Item>()
+                                                        subSnapshots.forEach { subShot ->
+                                                            if (subShot.id in myIdList) {
+                                                                subIdList.add(subShot.id)
+                                                            }
+                                                        }
+                                                        firestoreDb.collection("artifacts").whereIn(FieldPath.documentId().toString(), subIdList).get()
+                                                            .addOnSuccessListener { subtemps ->
+                                                                subtemps.forEach { subtemp ->
+                                                                    subObjList.add(subtemp.toObject(Item::class.java))
+                                                                }
+                                                                myIdList = subIdList
+                                                                myObjList = subObjList
+                                                                Log.i(TAG, "$myIdList")
+                                                                Log.i(TAG, "$myObjList")
+                                                                search.clear()
+                                                                search.addAll(myObjList)
+                                                                searchList = myObjList
+                                                                searchIdList = myIdList
+                                                                adapterSearch.notifyDataSetChanged()
+                                                            }
+                                                    }
+                                            }
+                                        }
+                                    } else {
+                                        Log.i(TAG, "$myIdList")
+                                        Log.i(TAG, "$myObjList")
+                                        search.clear()
+                                        search.addAll(myObjList)
+                                        searchList = myObjList
+                                        searchIdList = myIdList
+                                        adapterSearch.notifyDataSetChanged()
+                                    }
+                                }
+                        }
+                } else if (cmdList.size == 4) {
+                    if (cmdList[3].contains("whereIn")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                            .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                            .whereIn("${cmdList[3].split(',')[0].substringAfter("'").substringBefore("'")}", mutableListOf("${cmdList[3].split(',')[1].substringAfter("'").substringBefore("'")}"))
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myIdList.add(shot.id)
+                                }
+                                firestoreDb.collection("artifacts").whereIn(FieldPath.documentId().toString(), myIdList).get()
+                                    .addOnSuccessListener { temps ->
+                                        temps.forEach { temp ->
+                                            myObjList.add(temp.toObject(Item::class.java))
+                                        }
+                                        Log.i(TAG, "$myIdList")
+                                        Log.i(TAG, "$myObjList")
+                                        search.clear()
+                                        search.addAll(myObjList)
+                                        searchList = myObjList
+                                        searchIdList = myIdList
+                                        adapterSearch.notifyDataSetChanged()
+                                    }
+                            }
+                    } else if (cmdList[3].contains("whereEqualTo")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                            .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                            .whereEqualTo("${cmdList[3].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[3].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myIdList.add(shot.id)
+                                }
+                                firestoreDb.collection("artifacts").whereIn(FieldPath.documentId().toString(), myIdList).get()
+                                    .addOnSuccessListener { temps ->
+                                        temps.forEach { temp ->
+                                            myObjList.add(temp.toObject(Item::class.java))
+                                        }
+                                        if (subCmdStr.length > 28) {
+                                            if (subCmdList.size == 3) {
+                                                firestoreDb
+                                                    .collection("${subCmdList[0].substringAfter("'").substringBefore("'")}")
+                                                    .document("${subCmdList[1].substringAfter("'").substringBefore("'")}")
+                                                    .collection("${subCmdList[2].substringAfter("'").substringBefore("'")}")
+                                                    .get()
+                                                    .addOnSuccessListener { subSnapshots ->
+                                                        var subIdList = mutableListOf<String>()
+                                                        var subObjList = mutableListOf<Item>()
+                                                        subSnapshots.forEach { subShot ->
+                                                            subIdList.add(subShot.id)
+                                                        }
+                                                        firestoreDb.collection("artifacts").whereIn(FieldPath.documentId().toString(), subIdList).get()
+                                                            .addOnSuccessListener { subtemps ->
+                                                                subtemps.forEach { subtemp ->
+                                                                    subObjList.add(subtemp.toObject(Item::class.java))
+                                                                }
+                                                                myIdList = subIdList
+                                                                myObjList = subObjList
+                                                                Log.i(TAG, "$myIdList")
+                                                                Log.i(TAG, "$myObjList")
+                                                                search.clear()
+                                                                search.addAll(myObjList)
+                                                                searchList = myObjList
+                                                                searchIdList = myIdList
+                                                                adapterSearch.notifyDataSetChanged()
+                                                            }
+                                                    }
+                                            }
+                                        } else {
+                                            Log.i(TAG, "$myIdList")
+                                            Log.i(TAG, "$myObjList")
+                                            search.clear()
+                                            search.addAll(myObjList)
+                                            searchList = myObjList
+                                            searchIdList = myIdList
+                                            adapterSearch.notifyDataSetChanged()
+                                        }
+                                    }
+                            }
+                    } else if (cmdList[3].contains("whereArrayContains")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                            .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                            .whereArrayContains("${cmdList[3].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[3].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myIdList.add(shot.id)
+                                }
+                                firestoreDb.collection("artifacts").whereIn(FieldPath.documentId().toString(), myIdList).get()
+                                    .addOnSuccessListener { temps ->
+                                        temps.forEach { temp ->
+                                            myObjList.add(temp.toObject(Item::class.java))
+                                        }
+                                        Log.i(TAG, "$myIdList")
+                                        Log.i(TAG, "$myObjList")
+                                        search.clear()
+                                        search.addAll(myObjList)
+                                        searchList = myObjList
+                                        searchIdList = myIdList
+                                        adapterSearch.notifyDataSetChanged()
+                                    }
+                            }
+                    }
+                } else if (cmdList.size == 5) {
+                    if (cmdList[3].contains("whereIn") && cmdList[4].contains("whereEqualTo")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                            .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                            .whereIn("${cmdList[3].split(',')[0].substringAfter("'").substringBefore("'")}", mutableListOf("${cmdList[3].split(',')[1].substringAfter("'").substringBefore("'")}"))
+                            .whereEqualTo("${cmdList[4].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[4].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myIdList.add(shot.id)
+                                }
+                                firestoreDb.collection("artifacts").whereIn(FieldPath.documentId().toString(), myIdList).get()
+                                    .addOnSuccessListener { temps ->
+                                        temps.forEach { temp ->
+                                            myObjList.add(temp.toObject(Item::class.java))
+                                        }
+                                        Log.i(TAG, "$myIdList")
+                                        Log.i(TAG, "$myObjList")
+                                        search.clear()
+                                        search.addAll(myObjList)
+                                        searchList = myObjList
+                                        searchIdList = myIdList
+                                        adapterSearch.notifyDataSetChanged()
+                                    }
+                            }
+                    } else if (cmdList[3].contains("whereEqualTo") && cmdList[4].contains("whereIn")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                            .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                            .whereEqualTo("${cmdList[3].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[3].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .whereIn("${cmdList[4].split(',')[0].substringAfter("'").substringBefore("'")}", mutableListOf("${cmdList[4].split(',')[1].substringAfter("'").substringBefore("'")}"))
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myIdList.add(shot.id)
+                                }
+                                firestoreDb.collection("artifacts").whereIn(FieldPath.documentId().toString(), myIdList).get()
+                                    .addOnSuccessListener { temps ->
+                                        temps.forEach { temp ->
+                                            myObjList.add(temp.toObject(Item::class.java))
+                                        }
+                                        Log.i(TAG, "$myIdList")
+                                        Log.i(TAG, "$myObjList")
+                                        search.clear()
+                                        search.addAll(myObjList)
+                                        searchList = myObjList
+                                        searchIdList = myIdList
+                                        adapterSearch.notifyDataSetChanged()
+                                    }
+                            }
+                    } else if (cmdList[3].contains("whereEqualTo") && cmdList[4].contains("whereArrayContains")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                            .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                            .whereEqualTo("${cmdList[3].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[3].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .whereArrayContains("${cmdList[4].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[4].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myIdList.add(shot.id)
+                                }
+                                firestoreDb.collection("artifacts").whereIn(FieldPath.documentId().toString(), myIdList).get()
+                                    .addOnSuccessListener { temps ->
+                                        temps.forEach { temp ->
+                                            myObjList.add(temp.toObject(Item::class.java))
+                                        }
+                                        Log.i(TAG, "$myIdList")
+                                        Log.i(TAG, "$myObjList")
+                                        search.clear()
+                                        search.addAll(myObjList)
+                                        searchList = myObjList
+                                        searchIdList = myIdList
+                                        adapterSearch.notifyDataSetChanged()
+                                    }
+                            }
+                    } else if (cmdList[3].contains("whereArrayContains") && cmdList[4].contains("whereEqualTo")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                            .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                            .whereArrayContains("${cmdList[3].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[3].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .whereEqualTo("${cmdList[4].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[4].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myIdList.add(shot.id)
+                                }
+                                firestoreDb.collection("artifacts").whereIn(FieldPath.documentId().toString(), myIdList).get()
+                                    .addOnSuccessListener { temps ->
+                                        temps.forEach { temp ->
+                                            myObjList.add(temp.toObject(Item::class.java))
+                                        }
+                                        Log.i(TAG, "$myIdList")
+                                        Log.i(TAG, "$myObjList")
+                                        search.clear()
+                                        search.addAll(myObjList)
+                                        searchList = myObjList
+                                        searchIdList = myIdList
+                                        adapterSearch.notifyDataSetChanged()
+                                    }
+                            }
+                    } else if (cmdList[3].contains("whereEqualTo") && cmdList[4].contains("whereArrayContains")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                            .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                            .whereIn("${cmdList[3].split(',')[0].substringAfter("'").substringBefore("'")}", mutableListOf("${cmdList[3].split(',')[1].substringAfter("'").substringBefore("'")}"))
+                            .whereArrayContains("${cmdList[4].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[4].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myIdList.add(shot.id)
+                                }
+                                firestoreDb.collection("artifacts").whereIn(FieldPath.documentId().toString(), myIdList).get()
+                                    .addOnSuccessListener { temps ->
+                                        temps.forEach { temp ->
+                                            myObjList.add(temp.toObject(Item::class.java))
+                                        }
+                                        Log.i(TAG, "$myIdList")
+                                        Log.i(TAG, "$myObjList")
+                                        search.clear()
+                                        search.addAll(myObjList)
+                                        searchList = myObjList
+                                        searchIdList = myIdList
+                                        adapterSearch.notifyDataSetChanged()
+                                    }
+                            }
+                    } else if (cmdList[4].contains("whereEqualTo") && cmdList[3].contains("whereArrayContains")) {
+                        firestoreDb
+                            .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                            .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                            .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                            .whereArrayContains("${cmdList[3].split(',')[0].substringAfter("'").substringBefore("'")}", "${cmdList[3].split(',')[1].substringAfter("'").substringBefore("'")}")
+                            .whereIn("${cmdList[4].split(',')[0].substringAfter("'").substringBefore("'")}", mutableListOf("${cmdList[4].split(',')[1].substringAfter("'").substringBefore("'")}"))
+                            .get()
+                            .addOnSuccessListener { snapshots ->
+                                snapshots.forEach { shot ->
+                                    myIdList.add(shot.id)
+                                }
+                                firestoreDb.collection("artifacts").whereIn(FieldPath.documentId().toString(), myIdList).get()
+                                    .addOnSuccessListener { temps ->
+                                        temps.forEach { temp ->
+                                            myObjList.add(temp.toObject(Item::class.java))
+                                        }
+                                        Log.i(TAG, "$myIdList")
+                                        Log.i(TAG, "$myObjList")
+                                        search.clear()
+                                        search.addAll(myObjList)
+                                        searchList = myObjList
+                                        searchIdList = myIdList
+                                        adapterSearch.notifyDataSetChanged()
+                                    }
+                            }
+                    }
+                }
+            } else if (docCount == 2) {
+                firestoreDb
+                    .collection("${cmdList[0].substringAfter("'").substringBefore("'")}")
+                    .document("${cmdList[1].substringAfter("'").substringBefore("'")}")
+                    .collection("${cmdList[2].substringAfter("'").substringBefore("'")}")
+                    .document("${cmdList[3].substringAfter("'").substringBefore("'")}")
+                    .get()
+                    .addOnSuccessListener { shot ->
+                        firestoreDb.collection("artifacts").document("${shot.id}").get()
+                            .addOnSuccessListener { temp ->
+                                myObjList.add(temp.toObject(Item::class.java)!!)
+                                myIdList.add(shot.id)
+                            }
+                        Log.i(TAG, "$myIdList")
+                        Log.i(TAG, "$myObjList")
+                        search.clear()
+                        search.addAll(myObjList)
+                        searchList = myObjList
+                        searchIdList = myIdList
+                        adapterSearch.notifyDataSetChanged()
+                    }
+            }
+        }
+    }
+
 }

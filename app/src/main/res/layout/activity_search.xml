@@ -27,14 +27,11 @@
         android:layout_marginTop="10dp" >
 
         <EditText
-            android:id="@+id/etSearch"
+            android:id="@+id/etXpathCode"
             android:layout_width="320dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:ems="10"
-            android:hint="type keyword..."
-            android:inputType="text"
-            android:minHeight="48dp" />
+            android:textSize="16dp"
+            android:textColorHint="@color/black" />
 
         <ImageButton
             android:id="@+id/btnSearch"
@@ -45,6 +42,23 @@
 
     </LinearLayout>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="10dp" >
+
+        <EditText
+            android:id="@+id/etSearch"
+            android:layout_width="380dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:ems="10"
+            android:hint="type keyword..."
+            android:inputType="text"
+            android:minHeight="48dp" />
+
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvSearch"
@@ -52,6 +66,5 @@
         android:layout_height="match_parent"
         android:layout_marginTop="10dp"
         android:clickable="true" />
-
 
 </LinearLayout>
