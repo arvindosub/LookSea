@@ -31,7 +31,7 @@
             android:layout_width="320dp"
             android:layout_height="wrap_content"
             android:textSize="16dp"
-            android:textColorHint="@color/black" />
+            android:hint="enter xpath query..." />
 
         <ImageButton
             android:id="@+id/btnSearch"
@@ -53,10 +53,9 @@
             android:layout_width="380dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
-            android:ems="10"
+            android:textSize="16dp"
             android:hint="type keyword..."
-            android:inputType="text"
-            android:minHeight="48dp" />
+            android:inputType="text" />
 
     </LinearLayout>
 
