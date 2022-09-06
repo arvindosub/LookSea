@@ -568,13 +568,6 @@ class AccessActivity : AppCompatActivity() {
                 binding.btnSubmitXpath.isEnabled = true
             }
 
-        //descendant::user[contains(@description, 'japan')] --- all users from japan, start point will always be specific artifact (DONE)
-        //child::friend[@id='4Lbyyznfw9YASlVXMhcG7fRKOZt2']/descendant::friend --- all friends of a particular friend (DONE)
-        //descendant::friend[@value='classmate'] --- all classmates of a certain user (DONE)
-        //child::liked --- all posts liked by a certain user (DONE)
-        //child::commented[@owner='4Lbyyznfw9YASlVXMhcG7fRKOZt2'] --- all posts commented by a certain user which belong to another user (DONE)
-        //child::commented[@owner='4Lbyyznfw9YASlVXMhcG7fRKOZt2'][contains(@keywords, 'kitchen')] --- all posts commented by a certain user which belong to another user, of a certain subject (DONE)
-
         //new format
         //child::friend
         //child::friend/child::*[@username='john']

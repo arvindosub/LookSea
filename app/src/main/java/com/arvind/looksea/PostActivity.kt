@@ -278,6 +278,9 @@ class PostActivity : AppCompatActivity() {
 
     private fun handleSubmitButtonClick() {
         privacy = binding.etPrivacy.text.toString()
+        if (binding.etPrivacy.text.isBlank()) {
+            privacy = post?.privacy.toString()
+        }
 
         if (binding.etDescription.text.toString() == post?.description && post?.privacy == privacy) {
             Toast.makeText(this, "No changes made...", Toast.LENGTH_SHORT).show()
@@ -423,15 +426,18 @@ class PostActivity : AppCompatActivity() {
                         smileProb /= numFaces
                         if (faces.isEmpty()) {
                             Log.i(TAG, "No Faces Detected")
+                            Toast.makeText(this@PostActivity, "No Faces Detected", Toast.LENGTH_SHORT).show()
                         } else {
                             Log.i(TAG, "Total Number of Faces: $numFaces")
                             Log.i(TAG, "Average Smile Probability: $smileProb")
+                            Toast.makeText(this@PostActivity, "Total Number of Faces: $numFaces", Toast.LENGTH_SHORT).show()
                         }
                         labeler.process(image)
                             .addOnSuccessListener { labels ->
                                 for (label in labels) {
                                     tagString += "#${label.text.lowercase()} "
                                     Log.i(TAG, "${label.index}. ${label.text}: ${label.confidence}")
+                                    Toast.makeText(this@PostActivity, "${label.text}", Toast.LENGTH_SHORT).show()
                                 }
                                 tagString += "#faces=$numFaces "
                                 if (smileProb >= 0.5) {

@@ -304,6 +304,9 @@ class CreateActivity : AppCompatActivity() {
     private fun handleSubmitButtonClick() {
         var desc: String? = binding.etDescription.text.toString()
         privacy = binding.etPrivacy.text.toString()
+        if (binding.etPrivacy.text.isBlank()) {
+            privacy = "/pub2"
+        }
         if (binding.etDescription.text.isBlank()) {
             desc = ""
         }
